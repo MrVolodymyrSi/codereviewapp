@@ -1,4 +1,13 @@
-export function buildVanillaSrcdoc(code: string): string {
+import type { ChallengeFile } from '../types/challenge'
+import { MOCK_FETCH_INJECTION } from './mock-api'
+
+export function buildVanillaSrcdoc(files: ChallengeFile[]): string {
+  const htmlFile = files.find((f) => f.name.endsWith('.html'))
+  const jsFiles = files.filter((f) => f.name.endsWith('.js'))
+
+  const bodyContent = htmlFile ? htmlFile.code : ''
+  const jsCode = jsFiles.map((f) => f.code).join('\n')
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,9 +23,11 @@ export function buildVanillaSrcdoc(code: string): string {
       return true;
     };
   <\/script>
+  <script>${MOCK_FETCH_INJECTION}<\/script>
 </head>
 <body>
-${code}
+${bodyContent}
+${jsCode ? `<script>\n${jsCode}\n<\/script>` : ''}
 </body>
 </html>`
 }

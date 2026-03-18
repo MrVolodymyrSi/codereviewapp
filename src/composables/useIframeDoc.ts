@@ -5,17 +5,18 @@ import { buildVueSrcdoc } from '../utils/srcdoc-vue'
 import { buildReactSrcdoc } from '../utils/srcdoc-react'
 
 export function useIframeDoc() {
-  const { activeVariant, activeFramework } = useChallenge()
+  const { activeFramework, getCommittedFiles, runTrigger } = useChallenge()
 
   const srcdoc = computed(() => {
-    const { code } = activeVariant.value
+    runTrigger.value // reactive dep — recomputes when Run is clicked
+    const files = getCommittedFiles()
     switch (activeFramework.value) {
       case 'vanilla':
-        return buildVanillaSrcdoc(code)
+        return buildVanillaSrcdoc(files)
       case 'vue':
-        return buildVueSrcdoc(code)
+        return buildVueSrcdoc(files)
       case 'react':
-        return buildReactSrcdoc(code)
+        return buildReactSrcdoc(files)
     }
   })
 

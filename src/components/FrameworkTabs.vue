@@ -9,10 +9,10 @@ const emit = defineEmits<{
   change: [fw: Framework]
 }>()
 
-const tabs: { id: Framework; label: string }[] = [
-  { id: 'vue', label: 'Vue 3' },
-  { id: 'react', label: 'React' },
-  { id: 'vanilla', label: 'Vanilla JS' },
+const tabs: { id: Framework; label: string; color: string }[] = [
+  { id: 'vue', label: 'Vue 3', color: 'var(--vue)' },
+  { id: 'react', label: 'React', color: 'var(--react)' },
+  { id: 'vanilla', label: 'JS', color: 'var(--vanilla)' },
 ]
 </script>
 
@@ -22,8 +22,13 @@ const tabs: { id: Framework; label: string }[] = [
       v-for="tab in tabs"
       :key="tab.id"
       :class="['tab', { active: props.active === tab.id }]"
+      :style="props.active === tab.id ? { '--fw-color': tab.color } : { '--fw-color': 'transparent' }"
       @click="emit('change', tab.id)"
     >
+      <span
+        class="fw-dot"
+        :style="{ background: tab.color }"
+      />
       {{ tab.label }}
     </button>
   </div>
@@ -32,29 +37,52 @@ const tabs: { id: Framework; label: string }[] = [
 <style scoped>
 .framework-tabs {
   display: flex;
-  gap: 4px;
+  gap: 3px;
+  background: var(--bg-input);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
 }
 
 .tab {
-  padding: 6px 16px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 
 .tab:hover {
-  border-color: var(--accent);
+  background: var(--bg-elevated);
   color: var(--text);
 }
 
 .tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--bg-elevated);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.fw-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.tab.active .fw-dot,
+.tab:hover .fw-dot {
+  opacity: 1;
 }
 </style>

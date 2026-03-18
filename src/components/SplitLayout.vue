@@ -9,7 +9,6 @@ const iframeRef = ref<HTMLDivElement | null>(null)
 function onDividerMousedown(e: MouseEvent) {
   e.preventDefault()
   isDragging.value = true
-  // disable iframe pointer events so mousemove keeps firing over it
   if (iframeRef.value) iframeRef.value.style.pointerEvents = 'none'
 }
 
@@ -50,7 +49,13 @@ onUnmounted(() => {
       class="divider"
       :class="{ dragging: isDragging }"
       @mousedown="onDividerMousedown"
-    />
+    >
+      <div class="divider-handle">
+        <span class="grip" />
+        <span class="grip" />
+        <span class="grip" />
+      </div>
+    </div>
 
     <div ref="iframeRef" class="pane right-pane">
       <slot name="right" />
@@ -61,7 +66,7 @@ onUnmounted(() => {
 <style scoped>
 .split-layout {
   display: grid;
-  grid-template-columns: var(--split) 5px 1fr;
+  grid-template-columns: var(--split) 6px 1fr;
   height: 100%;
   overflow: hidden;
 }
@@ -72,16 +77,40 @@ onUnmounted(() => {
 }
 
 .divider {
-  background: var(--border);
+  background: var(--border-subtle);
   cursor: col-resize;
-  transition: background 0.15s;
+  transition: background 0.2s;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.divider::after {
+.divider::before {
   content: '';
   position: absolute;
-  inset: 0 -4px;
+  inset: 0 -5px;
+}
+
+.divider-handle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.grip {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.divider:hover .divider-handle,
+.divider.dragging .divider-handle {
+  opacity: 1;
 }
 
 .divider:hover,

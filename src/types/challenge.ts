@@ -1,8 +1,13 @@
 export type Framework = 'vue' | 'react' | 'vanilla'
 
-export interface ChallengeVariant {
+export interface ChallengeFile {
+  name: string
   code: string
-  language: 'vue' | 'tsx' | 'html'
+  language: string
+}
+
+export interface ChallengeVariant {
+  files: ChallengeFile[]
 }
 
 export interface ChallengeBug {
