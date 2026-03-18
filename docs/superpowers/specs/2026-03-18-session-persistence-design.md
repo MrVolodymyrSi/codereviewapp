@@ -59,9 +59,9 @@ RLS is disabled on the `sessions` table. The nanoid session ID (8 characters of 
 
 Notes and bug checklist changes are written to Supabase with a 1-second debounce. `challenge_id`, `framework`, and `total_bugs` are updated immediately when the interviewer switches challenge or framework.
 
-**Debounced save failure:** If a debounced `saveNotes` or `saveBugsChecked` call fails, a subtle "⚠ Save failed" indicator appears in the interviewer header. The save is retried on the next debounce tick (up to 3 attempts). localStorage remains populated throughout the session as a secondary fallback.
+**Debounced save failure:** If a debounced `saveNotes` or `saveBugsChecked` call fails, a subtle "⚠ Save failed" indicator appears in the interviewer header. The composable maintains a per-save retry counter (separate from the debounce timer). On failure, it retries up to 3 times with a 1-second interval between attempts. The counter resets to 0 after a successful write. If the user makes a new change while retrying, the pending retry is cancelled, the counter resets, and the new debounce cycle begins. localStorage remains populated throughout the session as a secondary fallback.
 
-**`saveChallengeMeta` failure:** If the immediate `saveChallengeMeta` call fails, the same "⚠ Save failed" indicator appears. The update is retried up to 3 times with 500ms delay. The challenge/framework switch is not blocked — the UI proceeds immediately and the retry happens in the background.
+**`saveChallengeMeta` failure:** If the immediate `saveChallengeMeta` call fails, the same "⚠ Save failed" indicator appears. The update is retried up to 3 times with 500ms delay. The challenge/framework switch is not blocked — the UI proceeds immediately and the retry happens in the background. The composable exposes a `metaSyncFailed` reactive boolean that is set to `true` when all 3 retries are exhausted, and reset to `false` when a subsequent `saveChallengeMeta` call succeeds.
 
 **Flush before end:** When the interviewer confirms "End Interview", all pending debounced saves (`saveNotes`, `saveBugsChecked`) are flushed and awaited before `endSession()` is called. This guarantees the final state is written before `ended_at` is set.
 
@@ -113,15 +113,15 @@ Supabase JS client singleton, initialised with `SUPABASE_URL` and `SUPABASE_ANON
 
 Handles all Supabase read/write for session data.
 
-**`createSessionRow(params)`** — inserts the full row at session creation. `params` includes: `id`, `candidateName`, `challengeId`, `framework`, `totalBugs`, `startedAt`. `totalBugs` is derived from `activeChallenge.value.bugs.filter(b => b.variant === activeFramework.value).length` in `useChallenge`. `expires_at` is computed by Postgres automatically. Returns `{ ok: true }` or `{ ok: false, error }`. On failure, `CreateSessionView` shows an inline error ("Could not start session — check your connection") and a Retry button. URLs are not shown until the INSERT succeeds.
+**`createSessionRow(params)`** — inserts the full row at session creation. `params` includes: `id`, `candidateName`, `challengeId`, `framework`, `totalBugs`. `startedAt` is NOT a parameter — `started_at` uses the Postgres column default (`now()`), avoiding client/server clock drift. `totalBugs` is derived from `activeChallenge.value.bugs.filter(b => b.variant === activeFramework.value).length` in `useChallenge`. `expires_at` is computed by Postgres automatically. Returns `{ ok: true }` or `{ ok: false; error: Error }`. On failure, `CreateSessionView` shows an inline error ("Could not start session — check your connection") and a Retry button. URLs are not shown until the INSERT succeeds.
 
 **`saveNotes(notes)`** — debounced 1s, updates the `notes` column.
 
-**`flushNotes()`** — cancels any pending debounce and immediately writes the latest notes value. Exported as a named function. Called by `InterviewerView` before `endSession`.
+**`flushNotes()`** — cancels any pending debounce and immediately writes the latest notes value. Exported as a named function. Returns `{ ok: true } | { ok: false; error: Error }`. If it fails, `InterviewerView` shows an error in the confirmation modal ("Could not save notes — check your connection") and aborts the end-session flow. Called by `InterviewerView` before `endSession`.
 
 **`saveBugsChecked(bugIds)`** — debounced 1s, updates `bugs_checked`.
 
-**`flushBugsChecked()`** — cancels any pending debounce and immediately writes the latest bugs value. Exported as a named function. Called by `InterviewerView` before `endSession`.
+**`flushBugsChecked()`** — cancels any pending debounce and immediately writes the latest bugs value. Exported as a named function. Returns `{ ok: true } | { ok: false; error: Error }`. If it fails, same abort behaviour as `flushNotes`. Called by `InterviewerView` before `endSession`.
 
 **`saveChallengeMeta(challengeId, framework, totalBugs)`** — immediate UPDATE on challenge or framework switch. On failure, surfaces "⚠ Save failed" and retries up to 3 times with 500ms delay.
 
@@ -159,12 +159,11 @@ Add a required `candidateName` text input. "Create Session" is disabled until th
 
 `sid` is read from `useSession().sessionId` (the existing composable that parses `?sid=` from the URL) and passed as an argument to `loadSession`.
 
-On mount:
-1. Call `loadSession(sid)`.
-2. `{ data: SessionRow }` with `ended_at` set → render `SessionSummaryView(session)`.
-3. `{ data: SessionRow }` in progress → render interview UI, start `useTimer(session.started_at)`.
-4. `{ notFound: true }` → show error screen: "Session not found. This link may be invalid or the session may have expired."
-5. `{ error: Error }` → show error screen: "Could not connect to session. Please check your connection and refresh."
+On mount, while `loadSession` is in flight, show a full-screen neutral loading state: a centred spinner and the text "Loading session…". Once resolved:
+1. `{ data: SessionRow }` with `ended_at` set → render `SessionSummaryView(session)`.
+2. `{ data: SessionRow }` in progress → render interview UI, start `useTimer(session.started_at)`.
+3. `{ notFound: true }` → show error screen: "Session not found. This link may be invalid or the session may have expired."
+4. `{ error: Error }` → show error screen: "Could not connect to session. Please check your connection and refresh."
 
 During the session: challenge and framework changes call `saveChallengeMeta` immediately.
 
@@ -177,9 +176,9 @@ On "End Interview" confirmed:
 
 ### Modified: `src/views/CandidateView.vue`
 
-`sid` is read from `useSession().sessionId` and passed to `loadSession`.
+`sid` is read from `useSession().sessionId` and passed to `loadSession`. `CandidateView` performs only read operations (`loadSession`) — no Supabase writes occur from the candidate side.
 
-On mount: call `loadSession(sid)`.
+On mount, while `loadSession` is in flight, show "Loading session…". Once resolved:
 - `{ data }` with `ended_at` set → show "Session ended" immediately
 - `{ notFound }` → show "This session link is invalid or has expired."
 - `{ error }` → show "Could not connect — please refresh."
@@ -191,9 +190,11 @@ Polling begins only after the initial `loadSession` call resolves with an in-pro
 ### Modified: `src/components/AppHeader.vue`
 
 Interviewer-only additions (only rendered when `isInterviewer` is true):
-- Timer display (`useTimer.display`) in the centre of the header
-- "End Interview" button on the right, styled with `var(--danger)` background
-- Confirmation modal: *"End the interview? This will close the session for the candidate too."* with Cancel and Confirm buttons
+- Timer display in the centre of the header, received as a `timerDisplay: string` prop passed down from `InterviewerView` (which owns `useTimer`). `AppHeader` does not call `useTimer` directly.
+- "End Interview" button on the right, styled with `var(--danger)` background — emits an `endInterview` event; `InterviewerView` handles the confirmation and flush logic.
+- Confirmation modal: *"End the interview? This will close the session for the candidate too."* with Cancel and Confirm buttons. Note: the full end-interview flow (flush + `endSession`) is not independently testable until `InterviewerView` is wired in step 11.
+
+"Copy summary" clipboard failure: if `navigator.clipboard.writeText` throws, `SessionSummaryView` shows an inline fallback — a read-only `<textarea>` pre-filled with the markdown, labelled "Copy manually."
 
 ### Modified: `useBugChecklist` and `useNotes`
 
