@@ -167,12 +167,14 @@ On mount, while `loadSession` is in flight, show a full-screen neutral loading s
 
 During the session: challenge and framework changes call `saveChallengeMeta` immediately.
 
-On "End Interview" confirmed:
-1. If the last `saveChallengeMeta` call failed all 3 retries (tracked by a `metaSyncFailed` reactive flag in the composable), show a warning in the confirmation modal: "Challenge metadata could not be saved. The summary may show incorrect challenge info. Continue?" The interviewer can still proceed.
-2. Flush pending saves: `await flushNotes(); await flushBugsChecked()`
-3. Call `endSession()`
-4. On failure: show error in modal, session stays open
-5. On success: call `timer.stop()`; render `SessionSummaryView(result.session)` using the re-fetched row
+On "End Interview" (triggered by `@endInterview` event from `AppHeader`):
+1. Open the confirmation modal (owned by `InterviewerView`). If `metaSyncFailed` is true, include a warning in the modal body: "Challenge metadata could not be saved — the summary may show incorrect challenge info." The interviewer can still proceed.
+2. On Confirm:
+   a. Flush in parallel: `const [r1, r2] = await Promise.all([flushNotes(), flushBugsChecked()])`
+   b. If either returns `{ ok: false }`: show error in the modal ("Could not save — check your connection") and abort; session stays open.
+   c. Call `endSession()`
+   d. On failure: show error in the modal, session stays open.
+   e. On success: call `timer.stop()`; close modal; render `SessionSummaryView(result.session)` using the re-fetched row.
 
 ### Modified: `src/views/CandidateView.vue`
 
@@ -191,8 +193,9 @@ Polling begins only after the initial `loadSession` call resolves with an in-pro
 
 Interviewer-only additions (only rendered when `isInterviewer` is true):
 - Timer display in the centre of the header, received as a `timerDisplay: string` prop passed down from `InterviewerView` (which owns `useTimer`). `AppHeader` does not call `useTimer` directly.
-- "End Interview" button on the right, styled with `var(--danger)` background — emits an `endInterview` event; `InterviewerView` handles the confirmation and flush logic.
-- Confirmation modal: *"End the interview? This will close the session for the candidate too."* with Cancel and Confirm buttons. Note: the full end-interview flow (flush + `endSession`) is not independently testable until `InterviewerView` is wired in step 11.
+- "End Interview" button on the right, styled with `var(--danger)` background. Clicking it emits an `endInterview` event to `InterviewerView`. `AppHeader` has no confirmation modal and no knowledge of the flush/end logic.
+
+The confirmation modal (and any error or warning states during the end-interview flow) lives entirely in `InterviewerView`, rendered as an overlay on top of the interview UI. This keeps `AppHeader` as a pure display component with no async responsibilities.
 
 "Copy summary" clipboard failure: if `navigator.clipboard.writeText` throws, `SessionSummaryView` shows an inline fallback — a read-only `<textarea>` pre-filled with the markdown, labelled "Copy manually."
 
@@ -209,7 +212,8 @@ The `onPersist` callback is only wired after `InterviewerView` mounts and `loadS
 ```
 CreateSessionView
   → user enters candidate name (required)
-  → createSessionRow(id, name, challengeId, framework, totalBugs, startedAt)
+  → createSessionRow(id, name, challengeId, framework, totalBugs)
+    [started_at set by Postgres default; no client timestamp passed]
     → on failure: show inline error + retry, do not show URLs
     → on success: show interviewer + candidate URLs
 
@@ -220,27 +224,40 @@ InterviewerView (mount)
     → { data }, ended_at set:  render SessionSummaryView(session)
     → { data }, in progress:   render interview UI
       → useTimer(session.started_at)
-      → AppHeader: timer display + End Interview button
+      → AppHeader: timerDisplay prop + emits @endInterview
       → challenge/framework switch → saveChallengeMeta() [immediate, retry ×3]
-      → notes change   → saveNotes()      [debounced 1s, retry ×3]
-      → checklist change → saveBugsChecked() [debounced 1s, retry ×3]
+      → notes change     → saveNotes()        [debounced 1s, retry ×3]
+      → checklist change → saveBugsChecked()  [debounced 1s, retry ×3]
       → any save failure → "⚠ Save failed" in header
-  → "End Interview" confirmed
-    → flushNotes() + flushBugsChecked()   [await both]
-    → endSession()
-      → on failure: error in modal, session stays open
-      → on success: render SessionSummaryView(result.session)  [re-fetched row]
+  → @endInterview received from AppHeader
+    → open confirmation modal (in InterviewerView)
+      → if metaSyncFailed: show warning in modal body
+    → on Confirm:
+      → await Promise.all([flushNotes(), flushBugsChecked()])
+        → if either { ok: false }: show error in modal, abort
+      → endSession()
+        → on failure: show error in modal, session stays open
+        → on success: timer.stop(); close modal
+                      render SessionSummaryView(result.session)
 
-CandidateView
-  → loadSession(sid) on mount → handle all 3 return shapes
-  → poll loadSession every 10s
-  → { data } ended_at set → "Session ended" screen
-  → 5 consecutive { error } → "Connection lost" banner, stop polling
+CandidateView  [reads Supabase only — no writes]
+  → loadSession(sid) on mount → show "Loading…" spinner while in flight
+    → { notFound }: "Link invalid or expired" screen
+    → { error }:    "Could not connect — refresh" screen
+    → { data } ended_at set: "Session ended" screen
+    → { data } in progress:  render editor UI
+      → start polling loadSession(sid) every 10s
+        [same loadSession call; polling reuse is intentional — the full row
+         is small and the candidate does not update local state from poll results]
+      → { data } ended_at set → "Session ended" screen, stop polling
+      → 5 consecutive { error } → "Connection lost" banner, stop polling
+      → { notFound } during poll → treat as session ended
 
 SessionSummaryView (read-only, props-only)
   → renders score, bugs (matched from static data by ID), notes, metadata
   → duration = ended_at - started_at, formatted H:MM:SS or MM:SS
   → "Copy summary" → clipboard markdown
+      → on clipboard failure: show read-only <textarea> fallback
 ```
 
 ---
