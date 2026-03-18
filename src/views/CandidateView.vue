@@ -55,4 +55,10 @@ onMounted(() => {
   overflow: hidden;
   min-height: 0;
 }
+
+.main-area :deep(.split-layout) {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
 </style>

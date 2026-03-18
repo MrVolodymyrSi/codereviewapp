@@ -66,4 +66,10 @@ onMounted(() => {
   overflow: hidden;
   min-width: 0;
 }
+
+.workspace-area :deep(.split-layout) {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
 </style>

@@ -13,11 +13,13 @@ const { activeVariant, activeFileIndex, setFileIndex } = useChallenge()
       :active-file-index="activeFileIndex"
       @select-file="setFileIndex"
     />
-    <CodePane
-      :files="activeVariant.files"
-      :active-file-index="activeFileIndex"
-      @select-file="setFileIndex"
-    />
+    <div class="code-wrap">
+      <CodePane
+        :files="activeVariant.files"
+        :active-file-index="activeFileIndex"
+        @select-file="setFileIndex"
+      />
+    </div>
   </div>
 </template>
 
@@ -26,5 +28,12 @@ const { activeVariant, activeFileIndex, setFileIndex } = useChallenge()
   display: flex;
   height: 100%;
   overflow: hidden;
+}
+
+.code-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  height: 100%;
 }
 </style>
