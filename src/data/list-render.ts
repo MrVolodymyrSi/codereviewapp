@@ -128,7 +128,24 @@ export const listRender: Challenge = {
   title: 'Todo List',
   description:
     'A simple todo list where users can add and remove items.',
-  bugs: [],
+  bugs: [
+    {
+      id: 'lr-1',
+      file: 'App.vue',
+      line: 9,
+      description: ':key uses the array index — Vue may reuse incorrect DOM nodes when items are removed mid-list, causing animation glitches and stale component state',
+      severity: 'medium',
+      variant: 'vue',
+    },
+    {
+      id: 'lr-2',
+      file: 'App.jsx',
+      line: 24,
+      description: 'key prop uses array index — React can mismatch elements when items are deleted, risking wrong focus state or incorrect list rendering',
+      severity: 'medium',
+      variant: 'react',
+    },
+  ],
   variants: {
     vanilla: {
       files: [

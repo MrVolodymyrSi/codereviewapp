@@ -10,9 +10,15 @@ export interface ChallengeVariant {
   files: ChallengeFile[]
 }
 
+export type BugSeverity = 'low' | 'medium' | 'high'
+
 export interface ChallengeBug {
-  title: string
-  explanation: string
+  id: string
+  line: number
+  file: string
+  description: string
+  severity: BugSeverity
+  variant?: Framework
 }
 
 export interface Challenge {

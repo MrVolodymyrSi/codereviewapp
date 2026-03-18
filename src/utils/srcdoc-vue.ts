@@ -1,5 +1,6 @@
 import type { ChallengeFile } from '../types/challenge'
 import { MOCK_FETCH_INJECTION } from './mock-api'
+import { IFRAME_BRIDGE_INJECTION } from './iframe-bridge'
 
 function parseSfc(code: string): { template: string; script: string; styles: string } {
   const templateMatch = code.match(/<template>([\s\S]*?)<\/template>/)
@@ -51,6 +52,7 @@ export function buildVueSrcdoc(files: ChallengeFile[]): string {
   </style>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"><\/script>
   <script>${MOCK_FETCH_INJECTION}<\/script>
+  <script>${IFRAME_BRIDGE_INJECTION}<\/script>
   ${extraStyles ? `<style>\n${extraStyles}</style>` : ''}
 </head>
 <body>

@@ -1,5 +1,6 @@
 import type { ChallengeFile } from '../types/challenge'
 import { MOCK_FETCH_INJECTION } from './mock-api'
+import { IFRAME_BRIDGE_INJECTION } from './iframe-bridge'
 
 export function buildReactSrcdoc(files: ChallengeFile[]): string {
   const cssFiles = files.filter((f) => f.name.endsWith('.css'))
@@ -22,6 +23,7 @@ export function buildReactSrcdoc(files: ChallengeFile[]): string {
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
   <script>${MOCK_FETCH_INJECTION}<\/script>
+  <script>${IFRAME_BRIDGE_INJECTION}<\/script>
 </head>
 <body>
   <div id="root"><span style="color:#999;font-size:0.85rem">Compiling...</span></div>

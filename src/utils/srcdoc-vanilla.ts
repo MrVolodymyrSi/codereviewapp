@@ -1,5 +1,6 @@
 import type { ChallengeFile } from '../types/challenge'
 import { MOCK_FETCH_INJECTION } from './mock-api'
+import { IFRAME_BRIDGE_INJECTION } from './iframe-bridge'
 
 export function buildVanillaSrcdoc(files: ChallengeFile[]): string {
   const htmlFile = files.find((f) => f.name.endsWith('.html'))
@@ -24,6 +25,7 @@ export function buildVanillaSrcdoc(files: ChallengeFile[]): string {
     };
   <\/script>
   <script>${MOCK_FETCH_INJECTION}<\/script>
+  <script>${IFRAME_BRIDGE_INJECTION}<\/script>
 </head>
 <body>
 ${bodyContent}

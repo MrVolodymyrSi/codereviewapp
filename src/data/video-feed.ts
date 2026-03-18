@@ -224,7 +224,32 @@ export const videoFeed: Challenge = {
   title: 'Video Feed',
   description:
     'A paginated video feed that loads thumbnails from an API and opens a modal detail view.',
-  bugs: [],
+  bugs: [
+    {
+      id: 'vf-1',
+      file: 'App.vue',
+      line: 51,
+      description: 'openVideo has no stale guard — clicking a second video while the first fetch is in-flight overwrites selectedVideo with whichever response arrives last',
+      severity: 'high',
+      variant: 'vue',
+    },
+    {
+      id: 'vf-2',
+      file: 'VideoFeed.vue',
+      line: 10,
+      description: 'Next button has no hasMore check — nextPage() increments the page counter indefinitely even when the API has no more results',
+      severity: 'medium',
+      variant: 'vue',
+    },
+    {
+      id: 'vf-3',
+      file: 'VideoFeed.jsx',
+      line: 6,
+      description: 'useEffect has no cleanup function — if page changes before fetchVideos resolves, the stale response still calls setVideos and setLoading on the new page',
+      severity: 'high',
+      variant: 'react',
+    },
+  ],
   variants: {
     vue: {
       files: [

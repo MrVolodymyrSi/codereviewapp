@@ -1,37 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import AppHeader from './components/AppHeader.vue'
-import SplitLayout from './components/SplitLayout.vue'
-import CodePane from './components/CodePane.vue'
-import PreviewPane from './components/PreviewPane.vue'
-import { useChallenge } from './composables/useChallenge'
-import { useIframeDoc } from './composables/useIframeDoc'
+import { useSession } from './composables/useSession'
+import CreateSessionView from './views/CreateSessionView.vue'
+import InterviewerView from './views/InterviewerView.vue'
+import CandidateView from './views/CandidateView.vue'
 
-const { activeVariant, activeFileIndex, setFileIndex, commitAndRun } = useChallenge()
-const { srcdoc } = useIframeDoc()
-
-onMounted(() => {
-  commitAndRun()
-})
+const { hasSession, isInterviewer } = useSession()
 </script>
 
 <template>
   <div class="app">
-    <AppHeader />
-    <main class="main">
-      <SplitLayout>
-        <template #left>
-          <CodePane
-            :files="activeVariant.files"
-            :active-file-index="activeFileIndex"
-            @select-file="setFileIndex"
-          />
-        </template>
-        <template #right>
-          <PreviewPane :srcdoc="srcdoc" />
-        </template>
-      </SplitLayout>
-    </main>
+    <CreateSessionView v-if="!hasSession" />
+    <InterviewerView v-else-if="isInterviewer" />
+    <CandidateView v-else />
   </div>
 </template>
 
@@ -98,15 +78,6 @@ html, body {
 
 <style scoped>
 .app {
-  display: flex;
-  flex-direction: column;
   height: 100%;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.main {
-  flex: 1;
-  overflow: hidden;
 }
 </style>

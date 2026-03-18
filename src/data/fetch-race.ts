@@ -172,7 +172,32 @@ export const fetchRace: Challenge = {
   title: 'User Profile Fetcher',
   description:
     'A component that fetches and displays a user profile when a user ID is selected.',
-  bugs: [],
+  bugs: [
+    {
+      id: 'fr-1',
+      file: 'App.vue',
+      line: 43,
+      description: 'Race condition: fetchUser sets this.profile without checking if userId changed since the request was sent — switching users quickly can show stale data',
+      severity: 'high',
+      variant: 'vue',
+    },
+    {
+      id: 'fr-2',
+      file: 'App.jsx',
+      line: 12,
+      description: 'useEffect has no cleanup — the setTimeout callback calls setProfile/setLoading even after userId changes, causing state updates from stale fetches',
+      severity: 'high',
+      variant: 'react',
+    },
+    {
+      id: 'fr-3',
+      file: 'App.vue',
+      line: 37,
+      description: 'users map is reconstructed inside fetchUser on every call — should be a module-level constant or fetched from an API',
+      severity: 'low',
+      variant: 'vue',
+    },
+  ],
   variants: {
     vanilla: {
       files: [

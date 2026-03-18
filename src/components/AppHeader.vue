@@ -3,8 +3,17 @@ import ChallengeSelector from './ChallengeSelector.vue'
 import FrameworkTabs from './FrameworkTabs.vue'
 import { useChallenge } from '../composables/useChallenge'
 
+const props = defineProps<{
+  candidateMode?: boolean
+  sessionId?: string
+}>()
+
 const { challenges, activeChallengeId, activeFramework, activeChallenge, setChallenge, setFramework } =
   useChallenge()
+
+function copySessionId() {
+  if (props.sessionId) navigator.clipboard.writeText(props.sessionId)
+}
 </script>
 
 <template>
@@ -22,13 +31,24 @@ const { challenges, activeChallengeId, activeFramework, activeChallenge, setChal
       </div>
 
       <div class="controls">
-        <ChallengeSelector
-          :challenges="challenges"
-          :active-id="activeChallengeId"
-          @change="setChallenge"
-        />
-        <div class="separator" />
-        <FrameworkTabs :active="activeFramework" @change="setFramework" />
+        <template v-if="!candidateMode">
+          <ChallengeSelector
+            :challenges="challenges"
+            :active-id="activeChallengeId"
+            @change="setChallenge"
+          />
+          <div class="separator" />
+          <FrameworkTabs :active="activeFramework" @change="setFramework" />
+        </template>
+        <template v-else>
+          <span class="candidate-badge">Candidate View</span>
+        </template>
+      </div>
+
+      <div class="header-right">
+        <button v-if="sessionId" class="sid-badge" :title="'Session: ' + sessionId" @click="copySessionId">
+          SID: <code>{{ sessionId }}</code>
+        </button>
       </div>
     </div>
 
@@ -94,6 +114,44 @@ const { challenges, activeChallengeId, activeFramework, activeChallenge, setChal
   height: 20px;
   background: var(--border);
   flex-shrink: 0;
+}
+
+.candidate-badge {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sid-badge {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.sid-badge:hover {
+  color: var(--text-muted);
+  border-color: var(--text-faint);
+}
+
+.sid-badge code {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
 }
 
 .description-bar {
