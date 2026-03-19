@@ -3,6 +3,7 @@ import FileTree from './FileTree.vue'
 import CodePane from './CodePane.vue'
 import { useChallenge } from '../composables/useChallenge'
 
+const props = defineProps<{ theme?: string }>()
 const { activeVariant, activeFileIndex, setFileIndex } = useChallenge()
 </script>
 
@@ -17,6 +18,7 @@ const { activeVariant, activeFileIndex, setFileIndex } = useChallenge()
       <CodePane
         :files="activeVariant.files"
         :active-file-index="activeFileIndex"
+        :theme="props.theme"
         @select-file="setFileIndex"
       />
     </div>

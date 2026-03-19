@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
+
+const EDITOR_THEME_KEY = 'codereview:editor-theme'
+const editorTheme = ref<string>(
+  localStorage.getItem(EDITOR_THEME_KEY) ?? 'vs-dark'
+)
+function toggleEditorTheme() {
+  editorTheme.value = editorTheme.value === 'vs-dark' ? 'vs' : 'vs-dark'
+  localStorage.setItem(EDITOR_THEME_KEY, editorTheme.value)
+}
 import SplitLayout from '../components/SplitLayout.vue'
 import WorkspacePane from '../components/WorkspacePane.vue'
 import PreviewPane from '../components/PreviewPane.vue'
@@ -164,7 +173,7 @@ onUnmounted(() => {
 
     <!-- Summary -->
     <template v-else-if="pageState === 'summary' && sessionData">
-      <AppHeader :session-id="sessionId ?? undefined" />
+      <AppHeader :session-id="sessionId ?? undefined" :editor-theme="editorTheme" @toggle-editor-theme="toggleEditorTheme" />
       <SessionSummaryView :session="sessionData" />
     </template>
 
@@ -173,7 +182,9 @@ onUnmounted(() => {
       <AppHeader
         :session-id="sessionId ?? undefined"
         :timer-display="timerDisplay"
+        :editor-theme="editorTheme"
         @end-interview="handleEndInterview"
+        @toggle-editor-theme="toggleEditorTheme"
       />
 
       <div v-if="saveFailed" class="save-failed-banner">⚠ Save failed — retrying…</div>
@@ -182,7 +193,7 @@ onUnmounted(() => {
         <div class="workspace-area">
           <SplitLayout>
             <template #left>
-              <WorkspacePane />
+              <WorkspacePane :theme="editorTheme" />
             </template>
             <template #right>
               <PreviewPane :srcdoc="srcdoc" />

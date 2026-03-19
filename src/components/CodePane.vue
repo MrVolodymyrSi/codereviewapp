@@ -8,11 +8,36 @@ import type { ChallengeFile } from '../types/challenge'
 const props = defineProps<{
   files: ChallengeFile[]
   activeFileIndex: number
+  theme?: string
 }>()
 
 const emit = defineEmits<{
   selectFile: [index: number]
 }>()
+
+const closedNames = ref(new Set<string>())
+
+// Reset when the file list changes (challenge/framework switch)
+watch(() => props.files, () => { closedNames.value = new Set() }, { flush: 'sync' })
+
+const visibleFiles = computed(() => props.files.filter((f) => !closedNames.value.has(f.name)))
+
+const activeFileName = computed(() => props.files[props.activeFileIndex]?.name ?? '')
+
+function fullIndex(file: ChallengeFile): number {
+  return props.files.findIndex((f) => f.name === file.name)
+}
+
+function closeTab(file: ChallengeFile) {
+  const wasActive = file.name === activeFileName.value
+  closedNames.value = new Set([...closedNames.value, file.name])
+  if (wasActive) {
+    const remaining = props.files.filter((f) => !closedNames.value.has(f.name))
+    if (remaining.length > 0) {
+      emit('selectFile', fullIndex(remaining[Math.min(props.activeFileIndex, remaining.length - 1)]))
+    }
+  }
+}
 
 const { activeChallengeId, activeFramework, getActiveCode, setActiveCode, isDirty, commitAndRun } = useChallenge()
 
@@ -78,14 +103,15 @@ const editorCode = computed(() => getActiveCode())
     <div class="pane-header">
       <div class="file-tabs">
         <button
-          v-for="(file, i) in files"
+          v-for="file in visibleFiles"
           :key="file.name"
           class="file-tab"
-          :class="{ active: i === activeFileIndex }"
-          @click="emit('selectFile', i)"
+          :class="{ active: file.name === activeFileName }"
+          @click="emit('selectFile', fullIndex(file))"
         >
           <span class="file-dot" />
           {{ file.name }}
+          <span class="tab-close" @click.stop="closeTab(file)" title="Close">&#x2715;</span>
         </button>
       </div>
       <div class="pane-actions">
@@ -102,6 +128,7 @@ const editorCode = computed(() => getActiveCode())
         v-if="activeFile"
         :code="editorCode"
         :language="activeFile.language"
+        :theme="props.theme"
         @change="setActiveCode"
       />
     </div>
@@ -220,6 +247,31 @@ const editorCode = computed(() => getActiveCode())
 
 .file-tab.active .file-dot {
   background: var(--accent);
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  color: var(--text-faint);
+  margin-left: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s, color 0.1s;
+}
+
+.file-tab:hover .tab-close,
+.file-tab.active .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
 }
 
 .pane-actions {

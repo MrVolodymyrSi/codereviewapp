@@ -2,7 +2,7 @@
 import loader from '@monaco-editor/loader'
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
-const props = defineProps<{ code: string; language: string }>()
+const props = defineProps<{ code: string; language: string; theme?: string }>()
 const emit = defineEmits<{ change: [string] }>()
 
 const container = ref<HTMLDivElement | null>(null)
@@ -18,7 +18,7 @@ onMounted(async () => {
   editor = monacoInstance.editor.create(container.value!, {
     value: props.code,
     language: langMap[props.language] ?? props.language,
-    theme: 'vs-dark',
+    theme: props.theme ?? 'vs-dark',
     fontSize: 13,
     fontFamily: "'Fira Code', 'Cascadia Code', Consolas, monospace",
     fontLigatures: true,
@@ -38,6 +38,10 @@ watch(() => props.language, (lang) => {
   if (editor && monacoInstance) {
     monacoInstance.editor.setModelLanguage(editor.getModel(), langMap[lang] ?? lang)
   }
+})
+
+watch(() => props.theme, (t) => {
+  if (monacoInstance) monacoInstance.editor.setTheme(t ?? 'vs-dark')
 })
 
 onBeforeUnmount(() => editor?.dispose())

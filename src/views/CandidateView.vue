@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
+
+const EDITOR_THEME_KEY = 'codereview:editor-theme'
+const editorTheme = ref<string>(
+  localStorage.getItem(EDITOR_THEME_KEY) ?? 'vs-dark'
+)
+function toggleEditorTheme() {
+  editorTheme.value = editorTheme.value === 'vs-dark' ? 'vs' : 'vs-dark'
+  localStorage.setItem(EDITOR_THEME_KEY, editorTheme.value)
+}
 import SplitLayout from '../components/SplitLayout.vue'
 import WorkspacePane from '../components/WorkspacePane.vue'
 import PreviewPane from '../components/PreviewPane.vue'
@@ -114,7 +123,7 @@ onUnmounted(stopPolling)
 
     <!-- Interview UI -->
     <template v-else-if="pageState === 'interview'">
-      <AppHeader :candidate-mode="true" :session-id="sessionId ?? undefined" />
+      <AppHeader :candidate-mode="true" :session-id="sessionId ?? undefined" :editor-theme="editorTheme" @toggle-editor-theme="toggleEditorTheme" />
 
       <div v-if="connectionLostBanner" class="connection-lost-banner">
         Connection lost — your session may still be active.
@@ -123,7 +132,7 @@ onUnmounted(stopPolling)
       <div class="main-area">
         <SplitLayout>
           <template #left>
-            <WorkspacePane />
+            <WorkspacePane :theme="editorTheme" />
           </template>
           <template #right>
             <PreviewPane :srcdoc="srcdoc" />

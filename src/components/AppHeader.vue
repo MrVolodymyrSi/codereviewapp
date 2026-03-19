@@ -7,10 +7,12 @@ const props = defineProps<{
   candidateMode?: boolean
   sessionId?: string
   timerDisplay?: string
+  editorTheme?: string
 }>()
 
 const emit = defineEmits<{
   endInterview: []
+  'toggle-editor-theme': []
 }>()
 
 const { challenges, activeChallengeId, activeFramework, activeChallenge, setChallenge, setFramework } =
@@ -51,6 +53,12 @@ function copySessionId() {
       </div>
 
       <div class="header-right">
+        <button
+          v-if="editorTheme !== undefined"
+          class="editor-theme-btn"
+          :title="editorTheme === 'vs-dark' ? 'Switch to light editor' : 'Switch to dark editor'"
+          @click="emit('toggle-editor-theme')"
+        >{{ editorTheme === 'vs-dark' ? '🌙' : '☀️' }}</button>
         <span v-if="timerDisplay && !candidateMode" class="timer-display">{{ timerDisplay }}</span>
 
         <button
@@ -92,7 +100,7 @@ function copySessionId() {
   align-items: center;
   gap: 24px;
   padding: 0 20px;
-  height: 52px;
+  height: 44px;
 }
 
 .brand {
@@ -133,8 +141,13 @@ function copySessionId() {
 
 .candidate-badge {
   font-size: 0.72rem;
-  color: var(--text-faint);
-  font-style: italic;
+  font-weight: 500;
+  font-style: normal;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+  padding: 2px 10px;
 }
 
 .header-right {
@@ -152,6 +165,10 @@ function copySessionId() {
   letter-spacing: 0.05em;
   min-width: 48px;
   text-align: right;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
 }
 
 .end-btn {
@@ -203,7 +220,7 @@ function copySessionId() {
   gap: 7px;
   padding: 6px 20px;
   border-top: 1px solid var(--border-subtle);
-  background: var(--bg);
+  background: var(--bg-surface);
 }
 
 .description-icon {
@@ -220,5 +237,24 @@ function copySessionId() {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-style: italic;
+}
+
+.editor-theme-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  height: 28px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.15s;
+}
+.editor-theme-btn:hover {
+  border-color: var(--text-faint);
 }
 </style>
