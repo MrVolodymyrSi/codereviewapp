@@ -62,4 +62,26 @@ describe('useComments module-level functions', () => {
     expect(calls[0][0].text).toBe('note')
     setOnPersist(null) // cleanup
   })
+
+  it('updateComment updates text and sets updatedAt on the matching comment', async () => {
+    const { useComments, hydrateComments, setOnPersist } = await import('../src/composables/useComments')
+    hydrateComments([], 'test-update', 'vue')
+    const key = computed(() => 'test-update:vue:App.vue')
+    const { addComment, updateComment, comments } = useComments(key)
+
+    addComment(5, 'original text')
+    const added = comments.value[0]
+    expect(added.text).toBe('original text')
+
+    const persistCalls: any[] = []
+    setOnPersist((c) => persistCalls.push(c))
+
+    updateComment(added.id, 'updated text')
+
+    expect(comments.value[0].text).toBe('updated text')
+    expect(comments.value[0].updatedAt).toBeDefined()
+    expect(persistCalls).toHaveLength(1)
+
+    setOnPersist(null)
+  })
 })
