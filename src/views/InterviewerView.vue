@@ -132,7 +132,11 @@ function cancelEnd() {
   modalError.value = null
 }
 
-onUnmounted(() => { timerInstance?.stop() })
+onUnmounted(() => {
+  timerInstance?.stop()
+  setNotesOnPersist(null)
+  setBugsOnPersist(null)
+})
 </script>
 
 <template>

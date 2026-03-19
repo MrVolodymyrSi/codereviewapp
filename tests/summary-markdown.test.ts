@@ -80,4 +80,14 @@ describe('generateSummaryMarkdown', () => {
     )
     expect(md).toContain('_No notes recorded._')
   })
+
+  it('handles zero bugs gracefully', () => {
+    const md = generateSummaryMarkdown(
+      { ...session, total_bugs: 0 },
+      'User Profile Fetcher',
+      [],
+    )
+    expect(md).toContain('## Bugs: 0/0')
+    expect(md).toContain('# Interview — Alice Chen')
+  })
 })

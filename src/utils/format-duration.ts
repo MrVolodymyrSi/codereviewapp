@@ -15,5 +15,5 @@ export function formatDuration(seconds: number): string {
  */
 export function formatSessionDuration(startedAt: string, endedAt: string): string {
   const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime()
-  return formatDuration(Math.floor(ms / 1000))
+  return formatDuration(Math.max(0, Math.floor(ms / 1000)))
 }
