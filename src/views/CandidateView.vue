@@ -189,9 +189,9 @@ onUnmounted(stopPolling)
 }
 
 .connection-lost-banner {
-  background: rgba(251, 146, 60, 0.08);
-  border-bottom: 1px solid rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  background: var(--warning-dim);
+  border-bottom: 1px solid rgba(154, 103, 0, 0.3);
+  color: var(--warning);
   font-size: 0.75rem;
   padding: 6px 20px;
   flex-shrink: 0;

@@ -153,13 +153,14 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 2.5rem 2.25rem;
   width: 100%;
   max-width: 480px;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .card-brand {
@@ -231,9 +232,9 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
 .error-msg {
   font-size: 0.78rem;
   color: var(--danger);
-  background: rgba(248, 113, 113, 0.08);
-  border: 1px solid rgba(248, 113, 113, 0.2);
-  border-radius: 6px;
+  background: var(--danger-dim);
+  border: 1px solid rgba(207, 34, 46, 0.3);
+  border-radius: var(--radius-sm);
   padding: 8px 12px;
 }
 
@@ -241,7 +242,7 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
   background: var(--accent);
   border: none;
   border-radius: 8px;
-  color: #000;
+  color: #fff;
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: 0.9rem;

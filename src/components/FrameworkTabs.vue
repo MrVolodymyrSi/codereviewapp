@@ -67,9 +67,9 @@ const tabs: { id: Framework; label: string; color: string }[] = [
 }
 
 .tab.active {
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   color: var(--text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .fw-dot {

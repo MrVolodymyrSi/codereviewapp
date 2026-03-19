@@ -239,7 +239,7 @@ const editorCode = computed(() => getActiveCode())
   background: var(--accent);
   border: none;
   border-radius: 6px;
-  color: #000;
+  color: #fff;
   font-family: var(--font-ui);
   font-size: 0.75rem;
   font-weight: 600;
@@ -255,8 +255,8 @@ const editorCode = computed(() => getActiveCode())
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #000;
-  opacity: 0.6;
+  background: #fff;
+  opacity: 0.7;
   flex-shrink: 0;
 }
 
@@ -300,7 +300,7 @@ const editorCode = computed(() => getActiveCode())
   height: 26px;
   border-radius: 6px;
   background: var(--accent);
-  color: #000;
+  color: #fff;
   font-family: var(--font-brand);
   font-size: 0.7rem;
   font-weight: 700;
@@ -360,8 +360,8 @@ const editorCode = computed(() => getActiveCode())
 }
 
 .comment-textarea:focus {
-  border-color: var(--react);
-  box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
 .comment-form-actions {
@@ -381,7 +381,7 @@ const editorCode = computed(() => getActiveCode())
   background: var(--accent);
   border: none;
   border-radius: 6px;
-  color: #000;
+  color: #fff;
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: 0.75rem;
@@ -487,6 +487,6 @@ const editorCode = computed(() => getActiveCode())
 
 .remove-btn:hover {
   color: var(--danger);
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--danger-dim);
 }
 </style>

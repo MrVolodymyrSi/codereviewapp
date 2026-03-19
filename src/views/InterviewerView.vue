@@ -274,9 +274,9 @@ onUnmounted(() => {
 }
 
 .save-failed-banner {
-  background: rgba(251, 146, 60, 0.1);
-  border-bottom: 1px solid rgba(251, 146, 60, 0.2);
-  color: #fb923c;
+  background: var(--warning-dim);
+  border-bottom: 1px solid rgba(154, 103, 0, 0.3);
+  color: var(--warning);
   font-size: 0.75rem;
   padding: 6px 20px;
   flex-shrink: 0;
@@ -307,7 +307,7 @@ onUnmounted(() => {
 .modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -317,7 +317,7 @@ onUnmounted(() => {
 .modal-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 2rem;
   width: 100%;
   max-width: 400px;
@@ -345,20 +345,20 @@ onUnmounted(() => {
 .modal-warning {
   margin: 0;
   font-size: 0.78rem;
-  color: #fb923c;
-  background: rgba(251, 146, 60, 0.08);
-  border: 1px solid rgba(251, 146, 60, 0.2);
-  border-radius: 6px;
+  color: var(--warning);
+  background: var(--warning-dim);
+  border: 1px solid rgba(154, 103, 0, 0.3);
+  border-radius: var(--radius-sm);
   padding: 8px 12px;
 }
 
 .modal-error {
   margin: 0;
   font-size: 0.78rem;
-  color: var(--danger, #f87171);
-  background: rgba(248, 113, 113, 0.08);
-  border: 1px solid rgba(248, 113, 113, 0.2);
-  border-radius: 6px;
+  color: var(--danger);
+  background: var(--danger-dim);
+  border: 1px solid rgba(207, 34, 46, 0.3);
+  border-radius: var(--radius-sm);
   padding: 8px 12px;
 }
 
