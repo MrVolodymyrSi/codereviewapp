@@ -14,13 +14,17 @@ const notes = ref<string>((() => {
 })())
 
 let _debounceTimer: ReturnType<typeof setTimeout> | null = null
+let _onPersist: ((text: string) => void) | null = null
 
 export function useNotes() {
   function setNotes(text: string) {
     notes.value = text
     if (_debounceTimer) clearTimeout(_debounceTimer)
     _debounceTimer = setTimeout(() => {
-      localStorage.setItem(notesKey(), text)
+      try {
+        localStorage.setItem(notesKey(), text)
+      } catch {}
+      _onPersist?.(text)
     }, 300)
   }
 
@@ -28,5 +32,9 @@ export function useNotes() {
     navigator.clipboard.writeText(notes.value).catch(() => {})
   }
 
-  return { notes, setNotes, exportNotes }
+  function setOnPersist(cb: (text: string) => void) {
+    _onPersist = cb
+  }
+
+  return { notes, setNotes, exportNotes, setOnPersist }
 }
