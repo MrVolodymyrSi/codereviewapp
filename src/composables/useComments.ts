@@ -2,33 +2,62 @@ import { ref, computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { Comment } from '../types/comment'
 
-const STORAGE_KEY = 'code-review-comments'
-
+// Module-level store keyed by "challengeId:framework:filename"
 const store = ref<Record<string, Comment[]>>({})
 
-// hydrate from localStorage once
-try {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (raw) store.value = JSON.parse(raw)
-} catch {}
+// Module-level persist callback — set by InterviewerView, null otherwise
+let _onPersist: ((comments: Comment[]) => void) | null = null
 
-function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store.value))
+// ── Module-level named exports ────────────────────────────────────────────
+
+export function hydrateComments(
+  comments: Comment[],
+  challengeId: string,
+  framework: string,
+): void {
+  const grouped: Record<string, Comment[]> = {}
+  for (const c of comments) {
+    const key = `${challengeId}:${framework}:${c.file}`
+    if (!grouped[key]) grouped[key] = []
+    grouped[key].push(c)
+  }
+  store.value = grouped
 }
+
+export function getAllComments(): Comment[] {
+  return Object.values(store.value).flat()
+}
+
+export function setOnPersist(cb: ((comments: Comment[]) => void) | null): void {
+  _onPersist = cb
+}
+
+// ── Per-instance composable ───────────────────────────────────────────────
 
 export function useComments(key: ComputedRef<string>) {
   const comments = computed<Comment[]>(() => store.value[key.value] ?? [])
 
   function addComment(line: number, text: string) {
-    const entry = store.value[key.value] ?? []
+    const file = key.value.split(':')[2]
     store.value = {
       ...store.value,
       [key.value]: [
-        ...entry,
-        { id: crypto.randomUUID(), line, text, timestamp: Date.now() },
+        ...(store.value[key.value] ?? []),
+        { id: crypto.randomUUID(), file, line, text, timestamp: Date.now() },
       ],
     }
-    persist()
+    _onPersist?.(getAllComments())
+  }
+
+  function updateComment(id: string, text: string) {
+    const entry = store.value[key.value] ?? []
+    store.value = {
+      ...store.value,
+      [key.value]: entry.map((c) =>
+        c.id === id ? { ...c, text, updatedAt: Date.now() } : c,
+      ),
+    }
+    _onPersist?.(getAllComments())
   }
 
   function removeComment(id: string) {
@@ -36,8 +65,8 @@ export function useComments(key: ComputedRef<string>) {
       ...store.value,
       [key.value]: (store.value[key.value] ?? []).filter((c) => c.id !== id),
     }
-    persist()
+    _onPersist?.(getAllComments())
   }
 
-  return { comments, addComment, removeComment }
+  return { comments, addComment, updateComment, removeComment }
 }
