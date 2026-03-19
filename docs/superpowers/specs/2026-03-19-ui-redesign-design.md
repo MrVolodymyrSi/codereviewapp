@@ -74,7 +74,7 @@ All padding and gap values in components must use one of these values. No 3px, 5
 | `--radius-md` | 8px | Dropdowns, modals |
 | `--radius-lg` | 12px | Cards (Create Session, Summary) |
 
-### Button System (3 variants, unified sizing)
+### Button System (4 variants, unified sizing)
 
 All buttons: `height: 32px`, `padding: 0 14px`, `border-radius: var(--radius-sm)`, `font-size: var(--text-base)`, `font-weight: 500`.
 
@@ -191,6 +191,7 @@ A small toggle button in `AppHeader` switches Monaco between `vs-dark` (default)
 - `src/views/InterviewerView.vue` — editor theme state + light styling
 - `src/views/CandidateView.vue` — editor theme state + light styling
 - `src/views/SessionSummaryView.vue` — light styling
+- `src/components/WorkspacePane.vue` — layout-only wrapper (14 lines CSS); update any hardcoded colors if present
 
 ---
 
