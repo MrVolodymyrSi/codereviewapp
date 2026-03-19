@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import SplitLayout from '../components/SplitLayout.vue'
 import WorkspacePane from '../components/WorkspacePane.vue'
@@ -131,6 +131,8 @@ function cancelEnd() {
   showModal.value = false
   modalError.value = null
 }
+
+onUnmounted(() => { timerInstance?.stop() })
 </script>
 
 <template>
