@@ -16,10 +16,10 @@ const foundCount = computed(
   () => visibleBugs.value.filter((b) => isChecked(b.id)).length
 )
 
-const SEVERITY_COLORS: Record<string, string> = {
-  high: 'var(--danger)',
-  medium: 'var(--accent)',
-  low: 'var(--text-faint)',
+const SEVERITY_STYLES: Record<string, { color: string; background: string; borderColor: string }> = {
+  high:   { color: 'var(--danger)',      background: 'var(--danger-dim)',  borderColor: 'rgba(207, 34, 46, 0.3)' },
+  medium: { color: 'var(--warning)',     background: 'var(--warning-dim)', borderColor: 'rgba(154, 103, 0, 0.3)' },
+  low:    { color: 'var(--text-faint)',  background: 'var(--bg-elevated)', borderColor: 'var(--border)' },
 }
 </script>
 
@@ -54,7 +54,7 @@ const SEVERITY_COLORS: Record<string, string> = {
           <div class="bug-top">
             <span
               class="severity-badge"
-              :style="{ color: SEVERITY_COLORS[bug.severity], borderColor: SEVERITY_COLORS[bug.severity] }"
+              :style="SEVERITY_STYLES[bug.severity] ?? SEVERITY_STYLES.low"
             >{{ bug.severity }}</span>
             <span class="bug-location">{{ bug.file }}:{{ bug.line }}</span>
           </div>
