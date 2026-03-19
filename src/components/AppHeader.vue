@@ -6,6 +6,11 @@ import { useChallenge } from '../composables/useChallenge'
 const props = defineProps<{
   candidateMode?: boolean
   sessionId?: string
+  timerDisplay?: string
+}>()
+
+const emit = defineEmits<{
+  endInterview: []
 }>()
 
 const { challenges, activeChallengeId, activeFramework, activeChallenge, setChallenge, setFramework } =
@@ -46,6 +51,16 @@ function copySessionId() {
       </div>
 
       <div class="header-right">
+        <span v-if="timerDisplay && !candidateMode" class="timer-display">{{ timerDisplay }}</span>
+
+        <button
+          v-if="!candidateMode && timerDisplay"
+          class="end-btn"
+          @click="emit('endInterview')"
+        >
+          End Interview
+        </button>
+
         <button v-if="sessionId" class="sid-badge" :title="'Session: ' + sessionId" @click="copySessionId">
           SID: <code>{{ sessionId }}</code>
         </button>
@@ -125,7 +140,35 @@ function copySessionId() {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 10px;
   flex-shrink: 0;
+}
+
+.timer-display {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  min-width: 48px;
+  text-align: right;
+}
+
+.end-btn {
+  background: var(--danger, #f87171);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  transition: opacity 0.15s;
+}
+
+.end-btn:hover {
+  opacity: 0.85;
 }
 
 .sid-badge {
