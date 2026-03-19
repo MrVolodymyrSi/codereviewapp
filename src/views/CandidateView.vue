@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
-
-const EDITOR_THEME_KEY = 'codereview:editor-theme'
-const editorTheme = ref<string>(
-  localStorage.getItem(EDITOR_THEME_KEY) ?? 'vs-dark'
-)
-function toggleEditorTheme() {
-  editorTheme.value = editorTheme.value === 'vs-dark' ? 'vs' : 'vs-dark'
-  localStorage.setItem(EDITOR_THEME_KEY, editorTheme.value)
-}
 import SplitLayout from '../components/SplitLayout.vue'
 import WorkspacePane from '../components/WorkspacePane.vue'
 import PreviewPane from '../components/PreviewPane.vue'
@@ -19,6 +10,15 @@ import { useIframeDoc } from '../composables/useIframeDoc'
 import { useSession } from '../composables/useSession'
 import { useConsole } from '../composables/useConsole'
 import { useSessionPersistence } from '../composables/useSessionPersistence'
+
+const EDITOR_THEME_KEY = 'codereview:editor-theme'
+const editorTheme = ref<'vs-dark' | 'vs'>(
+  (localStorage.getItem(EDITOR_THEME_KEY) as 'vs-dark' | 'vs') ?? 'vs-dark'
+)
+function toggleEditorTheme() {
+  editorTheme.value = editorTheme.value === 'vs-dark' ? 'vs' : 'vs-dark'
+  localStorage.setItem(EDITOR_THEME_KEY, editorTheme.value)
+}
 
 const { commitAndRun } = useChallenge()
 const { srcdoc } = useIframeDoc()

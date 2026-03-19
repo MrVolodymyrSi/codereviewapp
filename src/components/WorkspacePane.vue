@@ -3,7 +3,7 @@ import FileTree from './FileTree.vue'
 import CodePane from './CodePane.vue'
 import { useChallenge } from '../composables/useChallenge'
 
-const props = defineProps<{ theme?: string }>()
+const props = defineProps<{ theme?: 'vs-dark' | 'vs' }>()
 const { activeVariant, activeFileIndex, setFileIndex } = useChallenge()
 </script>
 

@@ -2,7 +2,7 @@
 import loader from '@monaco-editor/loader'
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
-const props = defineProps<{ code: string; language: string; theme?: string }>()
+const props = defineProps<{ code: string; language: string; theme?: 'vs-dark' | 'vs' }>()
 const emit = defineEmits<{ change: [string] }>()
 
 const container = ref<HTMLDivElement | null>(null)

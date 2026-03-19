@@ -7,7 +7,7 @@ const props = defineProps<{
   candidateMode?: boolean
   sessionId?: string
   timerDisplay?: string
-  editorTheme?: string
+  editorTheme?: 'vs-dark' | 'vs'
 }>()
 
 const emit = defineEmits<{
