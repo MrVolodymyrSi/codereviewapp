@@ -489,4 +489,9 @@ const editorCode = computed(() => getActiveCode())
   color: var(--danger);
   background: var(--danger-dim);
 }
+
+.tab-close:hover {
+  background: var(--danger-dim);
+  color: var(--danger);
+}
 </style>
