@@ -389,7 +389,7 @@ onUnmounted(() => {
 .btn-cancel:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .btn-confirm {
-  background: var(--danger, #f87171);
+  background: var(--danger);
   border: none;
   border-radius: 7px;
   color: #fff;
