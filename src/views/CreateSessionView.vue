@@ -1,15 +1,46 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useSession } from '../composables/useSession'
+import { useChallenge } from '../composables/useChallenge'
+import { useSessionPersistence } from '../composables/useSessionPersistence'
 
 const { createSession } = useSession()
+const { activeChallengeId, activeFramework, activeChallenge } = useChallenge()
+const { createSessionRow } = useSessionPersistence()
 
+const candidateName = ref('')
 const sid = ref<string | null>(null)
+const loading = ref(false)
+const createError = ref<string | null>(null)
 const interviewerCopied = ref(false)
 const candidateCopied = ref(false)
 
-function handleCreate() {
-  sid.value = createSession()
+async function handleCreate() {
+  if (!candidateName.value.trim()) return
+  loading.value = true
+  createError.value = null
+
+  const newSid = createSession()
+  const totalBugs = activeChallenge.value.bugs.filter(
+    (b) => b.variant === activeFramework.value,
+  ).length
+
+  const result = await createSessionRow({
+    id: newSid,
+    candidateName: candidateName.value.trim(),
+    challengeId: activeChallengeId.value,
+    framework: activeFramework.value,
+    totalBugs,
+  })
+
+  loading.value = false
+
+  if (!result.ok) {
+    createError.value = 'Could not start session — check your connection.'
+    return
+  }
+
+  sid.value = newSid
 }
 
 function buildUrl(role: 'interviewer' | 'candidate'): string {
@@ -43,11 +74,32 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
 
       <h1 class="card-title">Start Interview Session</h1>
       <p class="card-desc">
-        Generate a unique session link. Share the candidate URL with your interviewee — they'll see a clean editor without any hints.
+        Enter the candidate's name, then generate session links. Share the candidate URL — they'll see a clean editor without hints.
       </p>
 
       <template v-if="!sid">
-        <button class="create-btn" @click="handleCreate">Create Session</button>
+        <div class="field-group">
+          <label class="field-label" for="candidate-name">Candidate name</label>
+          <input
+            id="candidate-name"
+            v-model="candidateName"
+            type="text"
+            class="name-input"
+            placeholder="e.g. Alex Johnson"
+            :disabled="loading"
+            @keydown.enter="handleCreate"
+          />
+        </div>
+
+        <div v-if="createError" class="error-msg">{{ createError }}</div>
+
+        <button
+          class="create-btn"
+          :disabled="!candidateName.trim() || loading"
+          @click="handleCreate"
+        >
+          {{ loading ? 'Creating…' : 'Create Session' }}
+        </button>
       </template>
 
       <template v-else>
@@ -75,7 +127,7 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
 
         <p class="session-hint">
           Session ID: <code class="sid-code">{{ sid }}</code><br>
-          Open your interviewer link to begin. Candidate notes and bug checklist will be scoped to this session.
+          Open your interviewer link to begin.
         </p>
       </template>
     </div>
@@ -135,6 +187,50 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
   line-height: 1.6;
 }
 
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.name-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.name-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.name-input:disabled {
+  opacity: 0.5;
+}
+
+.error-msg {
+  font-size: 0.78rem;
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
 .create-btn {
   background: var(--accent);
   border: none;
@@ -149,9 +245,14 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
   align-self: flex-start;
 }
 
-.create-btn:hover {
+.create-btn:hover:not(:disabled) {
   opacity: 0.88;
   transform: translateY(-1px);
+}
+
+.create-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .links-section {
@@ -189,7 +290,6 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
   font-size: 0.72rem;
   padding: 7px 10px;
   outline: none;
-  cursor: text;
   min-width: 0;
 }
 
