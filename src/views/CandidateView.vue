@@ -11,15 +11,6 @@ import { useSession } from '../composables/useSession'
 import { useConsole } from '../composables/useConsole'
 import { useSessionPersistence } from '../composables/useSessionPersistence'
 
-const EDITOR_THEME_KEY = 'codereview:editor-theme'
-const editorTheme = ref<'vs-dark' | 'vs'>(
-  (localStorage.getItem(EDITOR_THEME_KEY) as 'vs-dark' | 'vs') ?? 'vs-dark'
-)
-function toggleEditorTheme() {
-  editorTheme.value = editorTheme.value === 'vs-dark' ? 'vs' : 'vs-dark'
-  localStorage.setItem(EDITOR_THEME_KEY, editorTheme.value)
-}
-
 const { commitAndRun } = useChallenge()
 const { srcdoc } = useIframeDoc()
 const { sessionId } = useSession()
@@ -123,7 +114,7 @@ onUnmounted(stopPolling)
 
     <!-- Interview UI -->
     <template v-else-if="pageState === 'interview'">
-      <AppHeader :candidate-mode="true" :session-id="sessionId ?? undefined" :editor-theme="editorTheme" @toggle-editor-theme="toggleEditorTheme" />
+      <AppHeader :candidate-mode="true" :session-id="sessionId ?? undefined" />
 
       <div v-if="connectionLostBanner" class="connection-lost-banner">
         Connection lost — your session may still be active.
@@ -132,7 +123,7 @@ onUnmounted(stopPolling)
       <div class="main-area">
         <SplitLayout>
           <template #left>
-            <WorkspacePane :theme="editorTheme" />
+            <WorkspacePane />
           </template>
           <template #right>
             <PreviewPane :srcdoc="srcdoc" />

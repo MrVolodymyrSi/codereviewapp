@@ -17,15 +17,6 @@ import { useSessionPersistence } from '../composables/useSessionPersistence'
 import { useTimer } from '../composables/useTimer'
 import type { SessionRow } from '../types/session'
 
-const EDITOR_THEME_KEY = 'codereview:editor-theme'
-const editorTheme = ref<'vs-dark' | 'vs'>(
-  (localStorage.getItem(EDITOR_THEME_KEY) as 'vs-dark' | 'vs') ?? 'vs-dark'
-)
-function toggleEditorTheme() {
-  editorTheme.value = editorTheme.value === 'vs-dark' ? 'vs' : 'vs-dark'
-  localStorage.setItem(EDITOR_THEME_KEY, editorTheme.value)
-}
-
 const { commitAndRun, activeChallengeId, activeFramework, activeChallenge } = useChallenge()
 const { srcdoc } = useIframeDoc()
 const { sessionId } = useSession()
@@ -173,7 +164,7 @@ onUnmounted(() => {
 
     <!-- Summary -->
     <template v-else-if="pageState === 'summary' && sessionData">
-      <AppHeader :session-id="sessionId ?? undefined" :editor-theme="editorTheme" @toggle-editor-theme="toggleEditorTheme" />
+      <AppHeader :session-id="sessionId ?? undefined" />
       <SessionSummaryView :session="sessionData" />
     </template>
 
@@ -182,9 +173,7 @@ onUnmounted(() => {
       <AppHeader
         :session-id="sessionId ?? undefined"
         :timer-display="timerDisplay"
-        :editor-theme="editorTheme"
         @end-interview="handleEndInterview"
-        @toggle-editor-theme="toggleEditorTheme"
       />
 
       <div v-if="saveFailed" class="save-failed-banner">⚠ Save failed — retrying…</div>
@@ -193,7 +182,7 @@ onUnmounted(() => {
         <div class="workspace-area">
           <SplitLayout>
             <template #left>
-              <WorkspacePane :theme="editorTheme" />
+              <WorkspacePane />
             </template>
             <template #right>
               <PreviewPane :srcdoc="srcdoc" />

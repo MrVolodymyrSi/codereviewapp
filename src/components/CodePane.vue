@@ -8,7 +8,6 @@ import type { ChallengeFile } from '../types/challenge'
 const props = defineProps<{
   files: ChallengeFile[]
   activeFileIndex: number
-  theme?: 'vs-dark' | 'vs'
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +15,15 @@ const emit = defineEmits<{
 }>()
 
 const { activeChallengeId, activeFramework, getActiveCode, setActiveCode, isDirty, commitAndRun } = useChallenge()
+
+const EDITOR_THEME_KEY = 'codereview:editor-theme'
+const editorTheme = ref<'vs-dark' | 'vs'>(
+  (localStorage.getItem(EDITOR_THEME_KEY) as 'vs-dark' | 'vs') ?? 'vs-dark'
+)
+function toggleEditorTheme() {
+  editorTheme.value = editorTheme.value === 'vs-dark' ? 'vs' : 'vs-dark'
+  localStorage.setItem(EDITOR_THEME_KEY, editorTheme.value)
+}
 
 const activeFile = computed(() => {
   const idx = Math.min(props.activeFileIndex, props.files.length - 1)
@@ -91,6 +99,11 @@ const editorCode = computed(() => getActiveCode())
       </div>
       <div class="pane-actions">
         <button class="comment-btn" @click="startComment()">+ Comment</button>
+        <button
+          class="editor-theme-btn"
+          :title="editorTheme === 'vs-dark' ? 'Switch to light editor' : 'Switch to dark editor'"
+          @click="toggleEditorTheme"
+        >{{ editorTheme === 'vs-dark' ? '🌙' : '☀️' }}</button>
         <button class="run-btn" @click="commitAndRun()">
           <span v-if="isDirty" class="dirty-dot" />
           &#9654; Run
@@ -103,7 +116,7 @@ const editorCode = computed(() => getActiveCode())
         v-if="activeFile"
         :code="editorCode"
         :language="activeFile.language"
-        :theme="props.theme"
+        :theme="editorTheme"
         @change="setActiveCode"
       />
     </div>
@@ -274,6 +287,25 @@ const editorCode = computed(() => getActiveCode())
 
 .comment-btn:hover {
   color: var(--text);
+  border-color: var(--text-faint);
+}
+
+.editor-theme-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  height: 28px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.15s;
+}
+
+.editor-theme-btn:hover {
   border-color: var(--text-faint);
 }
 

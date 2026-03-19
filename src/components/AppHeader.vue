@@ -7,12 +7,10 @@ const props = defineProps<{
   candidateMode?: boolean
   sessionId?: string
   timerDisplay?: string
-  editorTheme?: 'vs-dark' | 'vs'
 }>()
 
 const emit = defineEmits<{
   endInterview: []
-  'toggle-editor-theme': []
 }>()
 
 const { challenges, activeChallengeId, activeFramework, activeChallenge, setChallenge, setFramework } =
@@ -53,12 +51,6 @@ function copySessionId() {
       </div>
 
       <div class="header-right">
-        <button
-          v-if="editorTheme !== undefined"
-          class="editor-theme-btn"
-          :title="editorTheme === 'vs-dark' ? 'Switch to light editor' : 'Switch to dark editor'"
-          @click="emit('toggle-editor-theme')"
-        >{{ editorTheme === 'vs-dark' ? '🌙' : '☀️' }}</button>
         <span v-if="timerDisplay && !candidateMode" class="timer-display">{{ timerDisplay }}</span>
 
         <button
@@ -239,22 +231,4 @@ function copySessionId() {
   font-style: italic;
 }
 
-.editor-theme-btn {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 0.85rem;
-  height: 28px;
-  width: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: border-color 0.15s;
-}
-.editor-theme-btn:hover {
-  border-color: var(--text-faint);
-}
 </style>
