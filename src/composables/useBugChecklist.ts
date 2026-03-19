@@ -51,7 +51,7 @@ export function useBugChecklist(challengeId: Ref<string>) {
     persist(id)
   }
 
-  function setOnPersist(cb: (ids: string[]) => void) {
+  function setOnPersist(cb: ((ids: string[]) => void) | null) {
     _onPersist = cb
   }
 

@@ -32,7 +32,7 @@ export function useNotes() {
     navigator.clipboard.writeText(notes.value).catch(() => {})
   }
 
-  function setOnPersist(cb: (text: string) => void) {
+  function setOnPersist(cb: ((text: string) => void) | null) {
     _onPersist = cb
   }
 
