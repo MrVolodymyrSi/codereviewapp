@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { nanoid } from 'nanoid'
-import { useSession } from '../composables/useSession'
 import { useChallenge } from '../composables/useChallenge'
 import { useSessionPersistence } from '../composables/useSessionPersistence'
 
-const { createSession } = useSession()
 const { activeChallengeId, activeFramework, activeChallenge } = useChallenge()
 const { createSessionRow } = useSessionPersistence()
 
@@ -44,8 +42,8 @@ async function handleCreate() {
     return
   }
 
-  // DB row confirmed — now commit session state (this triggers view switch)
-  createSession(newSid)
+  // Show the links — the interviewer navigates via their link (which sets URL
+  // params on load), so no in-app session transition is needed here.
   sid.value = newSid
 }
 
