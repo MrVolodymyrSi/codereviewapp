@@ -1,3 +1,5 @@
+import type { Comment } from './comment'
+
 export type SessionRole = 'interviewer' | 'candidate'
 
 export interface SessionRow {
@@ -11,4 +13,5 @@ export interface SessionRow {
   started_at: string   // ISO 8601 from Postgres
   ended_at: string | null
   expires_at: string
+  comments: Comment[] | null
 }
