@@ -276,7 +276,6 @@ async function copySummary() {
 .bug-desc {
   flex: 1;
   font-size: 0.82rem;
-  color: var(--text-muted);
   line-height: 1.5;
 }
 
