@@ -145,6 +145,12 @@ async function copySummary() {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-bottom: 2rem;
 }
 
 .summary-header {
@@ -173,11 +179,11 @@ async function copySummary() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--accent);
-  background: var(--accent-dim);
-  border: 1px solid rgba(97, 218, 251, 0.2);
-  border-radius: 4px;
-  padding: 3px 8px;
+  color: var(--success);
+  background: var(--success-dim);
+  border: 1px solid rgba(26, 127, 55, 0.3);
+  border-radius: 20px;
+  padding: 3px 10px;
 }
 
 .summary-meta {
@@ -246,8 +252,8 @@ async function copySummary() {
 }
 
 .bug-row.checked {
-  border-color: rgba(97, 218, 251, 0.15);
-  background: rgba(97, 218, 251, 0.03);
+  border-color: rgba(26, 127, 55, 0.2);
+  background: rgba(26, 127, 55, 0.03);
 }
 
 .bug-check {
@@ -259,7 +265,12 @@ async function copySummary() {
 }
 
 .bug-row.checked .bug-check {
-  color: var(--accent);
+  color: var(--success);
+}
+
+.bug-row:not(.checked) .bug-desc {
+  color: var(--text-faint);
+  text-decoration: line-through;
 }
 
 .bug-desc {
@@ -283,8 +294,8 @@ async function copySummary() {
   flex-shrink: 0;
 }
 
-.bug-severity.high { color: #f87171; background: rgba(248, 113, 113, 0.1); }
-.bug-severity.medium { color: #fb923c; background: rgba(251, 146, 60, 0.1); }
+.bug-severity.high { color: var(--danger); background: var(--danger-dim); }
+.bug-severity.medium { color: var(--warning); background: var(--warning-dim); }
 .bug-severity.low { color: var(--text-faint); background: var(--bg-elevated); }
 
 .bug-empty {
@@ -332,10 +343,10 @@ async function copySummary() {
 }
 
 .copy-btn {
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 7px;
-  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  color: var(--text);
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: 0.8rem;
@@ -343,7 +354,6 @@ async function copySummary() {
   padding: 8px 16px;
   transition: color 0.15s, border-color 0.15s;
 }
-
 .copy-btn:hover {
   color: var(--text);
   border-color: var(--text-faint);
