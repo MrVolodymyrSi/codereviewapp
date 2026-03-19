@@ -20,7 +20,7 @@ import type { SessionRow } from '../types/session'
 const { commitAndRun, activeChallengeId, activeFramework, activeChallenge } = useChallenge()
 const { srcdoc } = useIframeDoc()
 const { sessionId } = useSession()
-const { setOnPersist: setNotesOnPersist } = useNotes()
+const { notes, setOnPersist: setNotesOnPersist } = useNotes()
 const { setOnPersist: setBugsOnPersist } = useBugChecklist(activeChallengeId)
 useConsole()
 
@@ -105,6 +105,13 @@ function handleEndInterview() {
 async function confirmEnd() {
   endingInProgress.value = true
   modalError.value = null
+
+  // Sync the current notes value to the persistence layer before flushing.
+  // notesLatestValue is only updated via the 300ms debounce in useNotes, so
+  // calling saveNotes here ensures the latest text is written even if the
+  // debounce hasn't fired yet (or notes were loaded from localStorage on mount
+  // and never modified, so saveNotes was never called at all).
+  saveNotes(notes.value)
 
   const [r1, r2] = await Promise.all([flushNotes(), flushBugsChecked()])
   if (!r1.ok || !r2.ok) {
