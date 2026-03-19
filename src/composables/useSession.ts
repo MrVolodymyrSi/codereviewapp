@@ -18,11 +18,11 @@ export function useSession() {
   const isCandidate = computed(() => role.value === 'candidate')
   const hasSession = computed(() => sessionId.value !== null && role.value !== null)
 
-  function createSession(): string {
-    const sid = nanoid(8)
-    sessionId.value = sid
+  function createSession(sid?: string): string {
+    const id = sid ?? nanoid(8)
+    sessionId.value = id
     role.value = 'interviewer'
-    return sid
+    return id
   }
 
   return {

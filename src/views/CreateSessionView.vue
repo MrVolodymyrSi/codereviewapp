@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { nanoid } from 'nanoid'
 import { useSession } from '../composables/useSession'
 import { useChallenge } from '../composables/useChallenge'
 import { useSessionPersistence } from '../composables/useSessionPersistence'
@@ -20,7 +21,10 @@ async function handleCreate() {
   loading.value = true
   createError.value = null
 
-  const newSid = createSession()
+  // Generate ID first — do NOT set module state yet or App.vue will
+  // immediately unmount this view and mount InterviewerView before the
+  // DB row exists, causing loadSession to return notFound.
+  const newSid = nanoid(8)
   const totalBugs = activeChallenge.value.bugs.filter(
     (b) => b.variant === activeFramework.value,
   ).length
@@ -40,6 +44,8 @@ async function handleCreate() {
     return
   }
 
+  // DB row confirmed — now commit session state (this triggers view switch)
+  createSession(newSid)
   sid.value = newSid
 }
 
