@@ -4,6 +4,8 @@ import { getLocalSid } from '../utils/local-session'
 
 const store = ref<Record<string, string[]>>({})
 
+let _onPersist: ((ids: string[]) => void) | null = null
+
 function storageKey(challengeId: string): string {
   return `codereview:bugs:${getLocalSid()}:${challengeId}`
 }
@@ -40,6 +42,7 @@ export function useBugChecklist(challengeId: Ref<string>) {
     const idx = list.indexOf(bugId)
     store.value[id] = idx >= 0 ? list.filter((b) => b !== bugId) : [...list, bugId]
     persist(id)
+    _onPersist?.(store.value[id])
   }
 
   function resetAll() {
@@ -48,5 +51,9 @@ export function useBugChecklist(challengeId: Ref<string>) {
     persist(id)
   }
 
-  return { checkedIds, isChecked, toggle, resetAll }
+  function setOnPersist(cb: (ids: string[]) => void) {
+    _onPersist = cb
+  }
+
+  return { checkedIds, isChecked, toggle, resetAll, setOnPersist }
 }
