@@ -63,8 +63,7 @@ function buildFormNode(line: number): HTMLDivElement {
   save.textContent = 'Add comment'
   save.style.cssText = 'background:#0969da;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;font-family:system-ui;cursor:pointer;'
   save.addEventListener('click', () => {
-    const text = ta.value.trim()
-    if (text) addComment(line, text)
+    addComment(line, ta.value)
     pendingLine.value = null
   })
 
@@ -97,8 +96,7 @@ function buildCommentNode(comment: { id: string; line: number; text: string }, i
     save.textContent = 'Save changes'
     save.style.cssText = 'background:#9a6700;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;font-family:system-ui;cursor:pointer;'
     save.addEventListener('click', () => {
-      const text = ta.value.trim()
-      if (text) updateComment(comment.id, text)
+      updateComment(comment.id, ta.value)
       editingId.value = null
     })
 
