@@ -271,6 +271,7 @@ function startInterview() {
   gap: 1rem;
 }
 
+/* Full-width primary action — spans the card to encourage clicking after copying the candidate link */
 .start-btn {
   width: 100%;
   margin-top: 16px;
