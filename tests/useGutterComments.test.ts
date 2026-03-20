@@ -7,7 +7,6 @@ import type { Comment } from '../src/types/comment'
 function createMockEditor() {
   let zoneCounter = 0
   const zones = new Map<string, any>()
-  const decorationSets: string[][] = []
 
   return {
     getContainerDomNode: () => document.createElement('div'),

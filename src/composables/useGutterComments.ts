@@ -171,7 +171,13 @@ function buildCommentNode(comment: Comment, onDelete: (id: string) => void): HTM
 
   const meta = document.createElement('div')
   meta.className = 'gc-meta'
-  meta.innerHTML = `<strong>Reviewer</strong><span class="gc-line-ref">line ${comment.line}</span>`
+  const strong = document.createElement('strong')
+  strong.textContent = 'Reviewer'
+  const lineRef = document.createElement('span')
+  lineRef.className = 'gc-line-ref'
+  lineRef.textContent = `line ${comment.line}`
+  meta.appendChild(strong)
+  meta.appendChild(lineRef)
 
   const text = document.createElement('p')
   text.className = 'gc-text'
@@ -256,6 +262,7 @@ export function useGutterComments(
   const disposables: Array<{ dispose: () => void }> = []
 
   function removeZone(zoneId: string): void {
+    if (!editor) return
     editor.changeViewZones((accessor: any) => accessor.removeZone(zoneId))
   }
 
@@ -301,12 +308,14 @@ export function useGutterComments(
       const current = comments.value
       const currentIds = new Set(current.map((c) => c.id))
 
+      const toRemove: string[] = []
       for (const [id, zoneId] of commentZoneMap) {
         if (!currentIds.has(id)) {
           removeZone(zoneId)
-          commentZoneMap.delete(id)
+          toRemove.push(id)
         }
       }
+      for (const id of toRemove) commentZoneMap.delete(id)
 
       for (const comment of current) {
         if (!commentZoneMap.has(comment.id)) {
