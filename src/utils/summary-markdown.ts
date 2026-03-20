@@ -23,10 +23,6 @@ export function generateSummaryMarkdown(
   const bugLines = bugs
     .map((b) => `- [${b.checked ? 'x' : ' '}] ${b.description} (${b.severity.toUpperCase()})`)
     .join('\n')
-  const commentLines = (session.comments ?? [])
-    .sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
-    .map(c => `- \`${c.file}\` L${c.line}: ${c.text}`)
-    .join('\n')
 
   return [
     `# Interview — ${session.candidate_name}`,
@@ -38,8 +34,5 @@ export function generateSummaryMarkdown(
     '',
     '## Notes',
     session.notes || '_No notes recorded._',
-    '',
-    '## Review Comments',
-    commentLines || '_No comments recorded._',
   ].join('\n')
 }

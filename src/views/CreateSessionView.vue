@@ -42,8 +42,8 @@ async function handleCreate() {
     return
   }
 
-  // Show the links. Interviewer clicks Start Interview to begin; candidate link
-  // is shared separately.
+  // Show the links — the interviewer navigates via their link (which sets URL
+  // params on load), so no in-app session transition is needed here.
   sid.value = newSid
 }
 
@@ -61,10 +61,6 @@ async function copyUrl(role: 'interviewer' | 'candidate') {
     candidateCopied.value = true
     setTimeout(() => { candidateCopied.value = false }, 1500)
   }
-}
-
-function startInterview() {
-  window.location.href = buildUrl('interviewer')
 }
 </script>
 
@@ -133,10 +129,9 @@ function startInterview() {
           </div>
         </div>
 
-        <button class="start-btn" @click="startInterview">Start Interview →</button>
-
         <p class="session-hint">
-          Session ID: <code class="sid-code">{{ sid }}</code>
+          Session ID: <code class="sid-code">{{ sid }}</code><br>
+          Open your interviewer link to begin.
         </p>
       </template>
     </div>
@@ -269,27 +264,6 @@ function startInterview() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-/* Full-width primary action — spans the card to encourage clicking after copying the candidate link */
-.start-btn {
-  width: 100%;
-  margin-top: 16px;
-  padding: 12px 24px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-}
-
-.start-btn:hover {
-  opacity: 0.88;
-  transform: translateY(-1px);
 }
 
 .link-row {

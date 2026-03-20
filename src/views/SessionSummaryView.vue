@@ -39,12 +39,6 @@ const renderedNotes = computed(() =>
   props.session.notes ? (marked(props.session.notes) as string) : '',
 )
 
-const sortedComments = computed(() =>
-  [...(props.session.comments ?? [])].sort((a, b) =>
-    a.file.localeCompare(b.file) || a.line - b.line
-  )
-)
-
 const copyFallback = ref<string | null>(null)
 const copied = ref(false)
 
@@ -103,18 +97,6 @@ async function copySummary() {
             <span class="bug-severity" :class="bug.severity">{{ bug.severity }}</span>
           </div>
           <div v-if="bugs.length === 0" class="bug-empty">No bugs for this variant.</div>
-        </div>
-      </div>
-
-      <div class="comments-section">
-        <div class="section-label">Review Comments</div>
-        <div v-if="sortedComments.length === 0" class="comments-empty">No comments recorded.</div>
-        <div v-else class="comment-list">
-          <div v-for="c in sortedComments" :key="c.id" class="comment-row">
-            <span class="file-chip">{{ c.file }}</span>
-            <span class="line-chip">L{{ c.line }}</span>
-            <span class="comment-text">{{ c.text }}</span>
-          </div>
         </div>
       </div>
 
@@ -320,63 +302,6 @@ async function copySummary() {
   color: var(--text-faint);
   font-style: italic;
   padding: 8px 0;
-}
-
-.comments-section {
-  margin-top: 16px;
-}
-
-.comment-list {
-  margin-top: 8px;
-}
-
-.comment-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
-
-.comment-row:last-child {
-  border-bottom: none;
-}
-
-.file-chip {
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--border-subtle, #eaeef2);
-  color: var(--text-faint);
-  border-radius: 3px;
-  padding: 1px 5px;
-  flex-shrink: 0;
-  font-family: monospace;
-  margin-top: 1px;
-}
-
-.line-chip {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-dim, #ddf4ff);
-  border-radius: 3px;
-  padding: 1px 5px;
-  flex-shrink: 0;
-  font-family: monospace;
-  margin-top: 1px;
-}
-
-.comment-text {
-  flex: 1;
-  color: var(--text);
-}
-
-.comments-empty {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--text-faint);
-  font-style: italic;
 }
 
 .notes-section {

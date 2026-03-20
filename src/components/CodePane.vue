@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useChallenge } from '../composables/useChallenge'
 import { useComments } from '../composables/useComments'
 import MonacoEditor from './MonacoEditor.vue'
@@ -34,169 +34,50 @@ const commentKey = computed(
   () => `${activeChallengeId.value}:${activeFramework.value}:${activeFile.value?.name ?? ''}`
 )
 
-const { comments, addComment, updateComment, removeComment } = useComments(commentKey)
+const { comments, addComment, removeComment } = useComments(commentKey)
 
-// ── View zone state ──────────────────────────────────────────────────────
-const editorRef = ref<InstanceType<typeof MonacoEditor> | null>(null)
 const pendingLine = ref<number | null>(null)
-const editingId   = ref<string | null>(null)
-const zoneIds     = new Map<string, string>()  // commentId → Monaco zoneId
-let   pendingZoneId: string | null = null
+const draftText = ref('')
+const commentInputRef = ref<HTMLTextAreaElement | null>(null)
+const commentLineInput = ref<number>(1)
 
-function getEditor() { return editorRef.value?.editor?.value ?? null }
-
-// ── View zone builders (plain DOM nodes that close over Vue refs) ─────────
-
-function buildFormNode(line: number): HTMLDivElement {
-  const div = document.createElement('div')
-  div.style.cssText = 'padding:8px 10px 8px 48px;background:#f0f6ff;border-top:2px solid #0969da;border-bottom:1px solid #c7d7f0;font-family:system-ui,sans-serif;box-sizing:border-box;'
-
-  const ta = document.createElement('textarea')
-  ta.placeholder = 'Leave a review comment…'
-  ta.style.cssText = 'width:100%;box-sizing:border-box;background:#fff;border:1px solid #0969da;border-radius:6px;font-size:12px;font-family:system-ui,sans-serif;padding:5px 8px;resize:none;height:44px;outline:none;display:block;'
-  div.appendChild(ta)
-
-  const row = document.createElement('div')
-  row.style.cssText = 'display:flex;gap:6px;margin-top:5px;'
-
-  const save = document.createElement('button')
-  save.textContent = 'Add comment'
-  save.style.cssText = 'background:#0969da;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;font-family:system-ui;cursor:pointer;'
-  save.addEventListener('click', () => {
-    const text = ta.value.trim()
-    if (text) addComment(line, text)
-    pendingLine.value = null
-  })
-
-  const cancel = document.createElement('button')
-  cancel.textContent = 'Cancel'
-  cancel.style.cssText = 'background:transparent;color:#57606a;border:1px solid #d0d7de;border-radius:5px;padding:3px 10px;font-size:11px;font-family:system-ui;cursor:pointer;'
-  cancel.addEventListener('click', () => { pendingLine.value = null })
-
-  row.appendChild(save)
-  row.appendChild(cancel)
-  div.appendChild(row)
-  return div
-}
-
-function buildCommentNode(comment: { id: string; line: number; text: string }, isEditing: boolean): HTMLDivElement {
-  const div = document.createElement('div')
-
-  if (isEditing) {
-    div.style.cssText = 'padding:8px 10px 8px 48px;background:#fffbdd;border-top:2px solid #d4a000;border-bottom:1px solid #e3c87a;font-family:system-ui,sans-serif;box-sizing:border-box;'
-
-    const ta = document.createElement('textarea')
-    ta.value = comment.text
-    ta.style.cssText = 'width:100%;box-sizing:border-box;background:#fff;border:1px solid #d4a000;border-radius:6px;font-size:12px;font-family:system-ui,sans-serif;padding:5px 8px;resize:none;height:44px;outline:none;display:block;'
-    div.appendChild(ta)
-
-    const row = document.createElement('div')
-    row.style.cssText = 'display:flex;gap:6px;margin-top:5px;'
-
-    const save = document.createElement('button')
-    save.textContent = 'Save changes'
-    save.style.cssText = 'background:#9a6700;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;font-family:system-ui;cursor:pointer;'
-    save.addEventListener('click', () => {
-      const text = ta.value.trim()
-      if (text) updateComment(comment.id, text)
-      editingId.value = null
-    })
-
-    const cancel = document.createElement('button')
-    cancel.textContent = 'Cancel'
-    cancel.style.cssText = 'background:transparent;color:#57606a;border:1px solid #d0d7de;border-radius:5px;padding:3px 10px;font-size:11px;font-family:system-ui;cursor:pointer;'
-    cancel.addEventListener('click', () => { editingId.value = null })
-
-    row.appendChild(save)
-    row.appendChild(cancel)
-    div.appendChild(row)
-  } else {
-    div.style.cssText = 'padding:6px 8px 6px 48px;background:#f6f8fa;border-top:2px solid #0969da;border-bottom:1px solid #eaeef2;font-family:system-ui,sans-serif;display:flex;align-items:flex-start;gap:8px;box-sizing:border-box;'
-
-    const avatar = document.createElement('div')
-    avatar.textContent = 'R'
-    avatar.style.cssText = 'width:20px;height:20px;border-radius:4px;background:#0969da;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;'
-
-    const content = document.createElement('div')
-    content.style.cssText = 'flex:1;min-width:0;'
-
-    const meta = document.createElement('div')
-    meta.textContent = `Reviewer · line ${comment.line}`
-    meta.style.cssText = 'font-size:10px;color:#8c959f;margin-bottom:2px;'
-
-    const text = document.createElement('div')
-    text.textContent = comment.text
-    text.style.cssText = 'font-size:12px;color:#24292f;line-height:1.5;'
-
-    const btns = document.createElement('div')
-    btns.style.cssText = 'display:flex;gap:8px;margin-top:4px;'
-
-    const editBtn = document.createElement('button')
-    editBtn.textContent = 'Edit'
-    editBtn.style.cssText = 'font-size:10px;color:#57606a;background:none;border:none;cursor:pointer;padding:0;font-family:system-ui;'
-    editBtn.addEventListener('click', () => { editingId.value = comment.id })
-
-    const delBtn = document.createElement('button')
-    delBtn.textContent = 'Delete'
-    delBtn.style.cssText = 'font-size:10px;color:#cf222e;background:none;border:none;cursor:pointer;padding:0;font-family:system-ui;'
-    delBtn.addEventListener('click', () => removeComment(comment.id))
-
-    btns.appendChild(editBtn)
-    btns.appendChild(delBtn)
-    content.appendChild(meta)
-    content.appendChild(text)
-    content.appendChild(btns)
-    div.appendChild(avatar)
-    div.appendChild(content)
+watch(pendingLine, async (val) => {
+  if (val !== null) {
+    await nextTick()
+    commentInputRef.value?.focus()
   }
-
-  return div
-}
-
-// ── Sync all view zones from current state ────────────────────────────────
-
-function syncViewZones() {
-  const ed = getEditor()
-  if (!ed) return
-  ed.changeViewZones((accessor: any) => {
-    zoneIds.forEach((id) => accessor.removeZone(id))
-    zoneIds.clear()
-    if (pendingZoneId) { accessor.removeZone(pendingZoneId); pendingZoneId = null }
-
-    for (const comment of comments.value) {
-      const dom = buildCommentNode(comment, editingId.value === comment.id)
-      // fixed: 8px padding top/bottom + textarea(44px) + gap(5px) + button-row(~22px) ≈ 87px; 90 gives breathing room
-      const id = accessor.addZone({ afterLineNumber: comment.line, heightInPx: 90, domNode: dom })
-      zoneIds.set(comment.id, id)
-    }
-
-    if (pendingLine.value !== null) {
-      const dom = buildFormNode(pendingLine.value)
-      // fixed: 8px padding top/bottom + textarea(44px) + gap(5px) + button-row(~22px) ≈ 87px; 90 gives breathing room
-      pendingZoneId = accessor.addZone({ afterLineNumber: pendingLine.value, heightInPx: 90, domNode: dom })
-    }
-  })
-}
-
-// ── Watchers ──────────────────────────────────────────────────────────────
-
-watch([comments, pendingLine, editingId], syncViewZones)
-// editorRef.value is the MonacoEditor component instance; .editor is the exposed ref<any>; .value unwraps it
-watch(() => editorRef.value?.editor?.value, (ed) => { if (ed) syncViewZones() })
-// Reset transient UI state on file tab change
-watch(commentKey, () => { pendingLine.value = null; editingId.value = null })
-
-onBeforeUnmount(() => {
-  zoneIds.clear()
-  pendingZoneId = null
 })
 
-// ── Gutter click handler (emitted from MonacoEditor) ─────────────────────
-
-function onGutterClick(line: number) {
-  pendingLine.value = line
-  editingId.value = null
+function startComment() {
+  pendingLine.value = commentLineInput.value
+  draftText.value = ''
 }
+
+function submitComment() {
+  if (pendingLine.value !== null && draftText.value.trim()) {
+    addComment(pendingLine.value, draftText.value.trim())
+  }
+  pendingLine.value = null
+  draftText.value = ''
+}
+
+function cancelComment() {
+  pendingLine.value = null
+  draftText.value = ''
+}
+
+const commentsByLine = computed(() => {
+  const map = new Map<number, typeof comments.value>()
+  for (const c of comments.value) {
+    if (!map.has(c.line)) map.set(c.line, [])
+    map.get(c.line)!.push(c)
+  }
+  return map
+})
+
+const sortedCommentLines = computed(() =>
+  Array.from(commentsByLine.value.keys()).sort((a, b) => a - b)
+)
 
 const editorCode = computed(() => getActiveCode())
 </script>
@@ -217,6 +98,7 @@ const editorCode = computed(() => getActiveCode())
         </button>
       </div>
       <div class="pane-actions">
+        <button class="comment-btn" @click="startComment()">+ Comment</button>
         <button
           class="editor-theme-btn"
           :title="editorTheme === 'vs-dark' ? 'Switch to light editor' : 'Switch to dark editor'"
@@ -232,13 +114,61 @@ const editorCode = computed(() => getActiveCode())
     <div class="editor-area">
       <MonacoEditor
         v-if="activeFile"
-        ref="editorRef"
         :code="editorCode"
         :language="activeFile.language"
         :theme="editorTheme"
         @change="setActiveCode"
-        @gutterClick="onGutterClick"
       />
+    </div>
+
+    <div v-if="pendingLine !== null" class="comment-form-row">
+      <div class="comment-avatar form-avatar">R</div>
+      <div class="comment-form-inner">
+        <div class="comment-line-select">
+          <label>Line: <input type="number" v-model.number="commentLineInput" min="1" class="line-input" /></label>
+        </div>
+        <textarea
+          ref="commentInputRef"
+          v-model="draftText"
+          class="comment-textarea"
+          placeholder="Leave a review comment…"
+          @keydown="(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); submitComment() } }"
+        />
+        <div class="comment-form-actions">
+          <span class="shortcut-hint">&#8984;S to save</span>
+          <button class="btn-cancel" @click="cancelComment()">Cancel</button>
+          <button class="btn-save" @click="submitComment()">Add comment</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="comments.length > 0" class="comment-panel">
+      <div class="comment-panel-header">
+        <span>Comments ({{ comments.length }})</span>
+      </div>
+      <div class="comment-panel-body">
+        <template v-for="line in sortedCommentLines" :key="line">
+          <div
+            v-for="comment in commentsByLine.get(line)"
+            :key="comment.id"
+            class="comment-row"
+          >
+            <div class="comment-avatar">R</div>
+            <div class="comment-body">
+              <div class="comment-meta">
+                <span class="comment-author">Reviewer</span>
+                <span class="comment-line-ref">line {{ line }}</span>
+              </div>
+              <p class="comment-text">{{ comment.text }}</p>
+            </div>
+            <button class="remove-btn" :aria-label="'Delete comment'" @click="removeComment(comment.id)">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -285,7 +215,9 @@ const editorCode = computed(() => getActiveCode())
   transition: color 0.15s, border-color 0.15s;
 }
 
-.file-tab:hover { color: var(--text); }
+.file-tab:hover {
+  color: var(--text);
+}
 
 .file-tab.active {
   color: var(--text);
@@ -301,7 +233,9 @@ const editorCode = computed(() => getActiveCode())
   transition: background 0.15s;
 }
 
-.file-tab.active .file-dot { background: var(--accent); }
+.file-tab.active .file-dot {
+  background: var(--accent);
+}
 
 .pane-actions {
   display: flex;
@@ -326,7 +260,9 @@ const editorCode = computed(() => getActiveCode())
   transition: opacity 0.15s;
 }
 
-.run-btn:hover { opacity: 0.85; }
+.run-btn:hover {
+  opacity: 0.85;
+}
 
 .dirty-dot {
   width: 6px;
@@ -335,6 +271,23 @@ const editorCode = computed(() => getActiveCode())
   background: #fff;
   opacity: 0.7;
   flex-shrink: 0;
+}
+
+.comment-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  padding: 5px 11px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.comment-btn:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
 }
 
 .editor-theme-btn {
@@ -352,11 +305,220 @@ const editorCode = computed(() => getActiveCode())
   transition: border-color 0.15s;
 }
 
-.editor-theme-btn:hover { border-color: var(--text-faint); }
+.editor-theme-btn:hover {
+  border-color: var(--text-faint);
+}
 
 .editor-area {
   flex: 1;
   overflow: hidden;
   min-height: 0;
+}
+
+/* Comment form */
+.comment-form-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 1rem;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+  border-left: 2px solid var(--react);
+  flex-shrink: 0;
+}
+
+.comment-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-brand);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.form-avatar {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  margin-top: 2px;
+}
+
+.comment-form-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.comment-line-select {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.line-input {
+  width: 60px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+.comment-textarea {
+  width: 100%;
+  min-height: 60px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  padding: 8px 10px;
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.comment-textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.comment-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.comment-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shortcut-hint {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  flex: 1;
+}
+
+.btn-save {
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 13px;
+  transition: opacity 0.15s;
+}
+
+.btn-save:hover { opacity: 0.85; }
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  padding: 5px 11px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-cancel:hover { color: var(--text); border-color: var(--text-faint); }
+
+/* Comment panel */
+.comment-panel {
+  flex-shrink: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.comment-panel-header {
+  padding: 6px 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.comment-panel-body {
+  padding: 4px 0;
+}
+
+.comment-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  border-left: 2px solid var(--accent);
+  position: relative;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.comment-author {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.comment-line-ref {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+.comment-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.remove-btn:hover {
+  color: var(--danger);
+  background: var(--danger-dim);
 }
 </style>
