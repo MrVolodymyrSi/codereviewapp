@@ -9,6 +9,7 @@ import type { ChallengeFile } from '../types/challenge'
 const props = defineProps<{
   files: ChallengeFile[]
   activeFileIndex: number
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -118,7 +119,7 @@ const editorCode = computed(() => getActiveCode())
         :code="editorCode"
         :language="activeFile.language"
         :theme="editorTheme"
-        :read-only="true"
+        :read-only="props.readOnly"
         @ready="onEditorReady"
         @change="setActiveCode"
       />

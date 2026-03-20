@@ -189,7 +189,7 @@ onUnmounted(() => {
         <div class="workspace-area">
           <SplitLayout>
             <template #left>
-              <WorkspacePane />
+              <WorkspacePane :read-only="true" />
             </template>
             <template #right>
               <PreviewPane :srcdoc="srcdoc" />
