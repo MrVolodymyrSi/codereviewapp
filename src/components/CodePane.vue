@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useChallenge } from '../composables/useChallenge'
 import { useComments } from '../composables/useComments'
 import MonacoEditor from './MonacoEditor.vue'
@@ -63,7 +63,8 @@ function buildFormNode(line: number): HTMLDivElement {
   save.textContent = 'Add comment'
   save.style.cssText = 'background:#0969da;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;font-family:system-ui;cursor:pointer;'
   save.addEventListener('click', () => {
-    addComment(line, ta.value)
+    const text = ta.value.trim()
+    if (text) addComment(line, text)
     pendingLine.value = null
   })
 
@@ -96,7 +97,8 @@ function buildCommentNode(comment: { id: string; line: number; text: string }, i
     save.textContent = 'Save changes'
     save.style.cssText = 'background:#9a6700;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;font-family:system-ui;cursor:pointer;'
     save.addEventListener('click', () => {
-      updateComment(comment.id, ta.value)
+      const text = ta.value.trim()
+      if (text) updateComment(comment.id, text)
       editingId.value = null
     })
 
@@ -163,12 +165,14 @@ function syncViewZones() {
 
     for (const comment of comments.value) {
       const dom = buildCommentNode(comment, editingId.value === comment.id)
+      // fixed: 8px padding top/bottom + textarea(44px) + gap(5px) + button-row(~22px) ≈ 87px; 90 gives breathing room
       const id = accessor.addZone({ afterLineNumber: comment.line, heightInPx: 90, domNode: dom })
       zoneIds.set(comment.id, id)
     }
 
     if (pendingLine.value !== null) {
       const dom = buildFormNode(pendingLine.value)
+      // fixed: 8px padding top/bottom + textarea(44px) + gap(5px) + button-row(~22px) ≈ 87px; 90 gives breathing room
       pendingZoneId = accessor.addZone({ afterLineNumber: pendingLine.value, heightInPx: 90, domNode: dom })
     }
   })
@@ -177,10 +181,15 @@ function syncViewZones() {
 // ── Watchers ──────────────────────────────────────────────────────────────
 
 watch([comments, pendingLine, editingId], syncViewZones)
-// Fires once when Monaco finishes async init; .value chain is reactive inside watch getter
+// editorRef.value is the MonacoEditor component instance; .editor is the exposed ref<any>; .value unwraps it
 watch(() => editorRef.value?.editor?.value, (ed) => { if (ed) syncViewZones() })
 // Reset transient UI state on file tab change
 watch(commentKey, () => { pendingLine.value = null; editingId.value = null })
+
+onBeforeUnmount(() => {
+  zoneIds.clear()
+  pendingZoneId = null
+})
 
 // ── Gutter click handler (emitted from MonacoEditor) ─────────────────────
 
