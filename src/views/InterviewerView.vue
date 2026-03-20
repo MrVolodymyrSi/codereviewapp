@@ -14,6 +14,7 @@ import { useConsole } from '../composables/useConsole'
 import { useNotes } from '../composables/useNotes'
 import { useBugChecklist } from '../composables/useBugChecklist'
 import { useSessionPersistence } from '../composables/useSessionPersistence'
+import { hydrateComments, getAllComments, setOnPersist as setCommentsOnPersist } from '../composables/useComments'
 import { useTimer } from '../composables/useTimer'
 import type { SessionRow } from '../types/session'
 
@@ -30,6 +31,8 @@ const {
   flushNotes,
   saveBugsChecked,
   flushBugsChecked,
+  saveComments,
+  flushComments,
   saveChallengeMeta,
   endSession,
   saveFailed,
@@ -80,6 +83,9 @@ onMounted(async () => {
   pageState.value = 'interview'
   setNotesOnPersist(saveNotes)
   setBugsOnPersist(saveBugsChecked)
+  hydrateComments(result.data.comments ?? [], result.data.challenge_id, result.data.framework)
+  setCommentsOnPersist(saveComments)
+  // Do NOT call saveComments here — commentsLatestValue was already set by loadSession
 
   timerInstance = useTimer(new Date(result.data.started_at))
   timerDisplay.value = timerInstance.display.value
@@ -112,9 +118,10 @@ async function confirmEnd() {
   // debounce hasn't fired yet (or notes were loaded from localStorage on mount
   // and never modified, so saveNotes was never called at all).
   saveNotes(notes.value)
+  saveComments(getAllComments())
 
-  const [r1, r2] = await Promise.all([flushNotes(), flushBugsChecked()])
-  if (!r1.ok || !r2.ok) {
+  const [r1, r2, r3] = await Promise.all([flushNotes(), flushBugsChecked(), flushComments()])
+  if (!r1.ok || !r2.ok || !r3.ok) {
     modalError.value = 'Could not save — check your connection.'
     endingInProgress.value = false
     return
@@ -143,6 +150,7 @@ onUnmounted(() => {
   timerInstance?.stop()
   setNotesOnPersist(null)
   setBugsOnPersist(null)
+  setCommentsOnPersist(null)
 })
 </script>
 
