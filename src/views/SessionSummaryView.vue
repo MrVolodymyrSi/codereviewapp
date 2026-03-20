@@ -335,7 +335,7 @@ async function copySummary() {
   align-items: flex-start;
   gap: 8px;
   padding: 6px 0;
-  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  border-bottom: 1px solid var(--border);
   font-size: 13px;
 }
 
@@ -346,8 +346,8 @@ async function copySummary() {
 .file-chip {
   font-size: 11px;
   font-weight: 600;
-  background: #eaeef2;
-  color: #57606a;
+  background: var(--border-subtle, #eaeef2);
+  color: var(--text-faint);
   border-radius: 3px;
   padding: 1px 5px;
   flex-shrink: 0;
@@ -358,8 +358,8 @@ async function copySummary() {
 .line-chip {
   font-size: 11px;
   font-weight: 600;
-  color: #0969da;
-  background: #ddf4ff;
+  color: var(--accent);
+  background: var(--accent-dim, #ddf4ff);
   border-radius: 3px;
   padding: 1px 5px;
   flex-shrink: 0;
@@ -369,13 +369,13 @@ async function copySummary() {
 
 .comment-text {
   flex: 1;
-  color: var(--color-text, #24292f);
+  color: var(--text);
 }
 
 .comments-empty {
   margin-top: 8px;
   font-size: 13px;
-  color: var(--color-text-muted, #57606a);
+  color: var(--text-faint);
   font-style: italic;
 }
 
