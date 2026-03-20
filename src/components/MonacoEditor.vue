@@ -3,19 +3,19 @@ import loader from '@monaco-editor/loader'
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps<{ code: string; language: string; theme?: 'vs-dark' | 'vs' }>()
-const emit = defineEmits<{ change: [string] }>()
+const emit = defineEmits<{ change: [string]; gutterClick: [number] }>()
 
 const container = ref<HTMLDivElement | null>(null)
-let editor: any = null
-let monacoInstance: any = null
+const editor = ref<any>(null)
+const monacoInstance = ref<any>(null)
 
 const langMap: Record<string, string> = {
   vue: 'html', tsx: 'javascript', html: 'html', javascript: 'javascript',
 }
 
 onMounted(async () => {
-  monacoInstance = await loader.init()
-  editor = monacoInstance.editor.create(container.value!, {
+  monacoInstance.value = await loader.init()
+  editor.value = monacoInstance.value.editor.create(container.value!, {
     value: props.code,
     language: langMap[props.language] ?? props.language,
     theme: props.theme ?? 'vs-dark',
@@ -27,24 +27,36 @@ onMounted(async () => {
     automaticLayout: true,
     padding: { top: 8 },
   })
-  editor.onDidChangeModelContent(() => emit('change', editor.getValue()))
+  editor.value.onDidChangeModelContent(() => emit('change', editor.value.getValue()))
+  editor.value.onMouseDown((e: any) => {
+    const { MouseTargetType } = monacoInstance.value.editor
+    if (
+      e.target.type === MouseTargetType.GUTTER_LINE_NUMBERS ||
+      e.target.type === MouseTargetType.GUTTER_GLYPH_MARGIN ||
+      e.target.type === MouseTargetType.GUTTER_LINE_DECORATIONS
+    ) {
+      const line = e.target.position?.lineNumber ?? null
+      if (line) emit('gutterClick', line)
+    }
+  })
 })
 
 watch(() => props.code, (val) => {
-  if (editor && editor.getValue() !== val) editor.setValue(val)
+  if (editor.value && editor.value.getValue() !== val) editor.value.setValue(val)
 })
 
 watch(() => props.language, (lang) => {
-  if (editor && monacoInstance) {
-    monacoInstance.editor.setModelLanguage(editor.getModel(), langMap[lang] ?? lang)
-  }
+  if (editor.value && monacoInstance.value)
+    monacoInstance.value.editor.setModelLanguage(editor.value.getModel(), langMap[lang] ?? lang)
 })
 
 watch(() => props.theme, (t) => {
-  if (monacoInstance) monacoInstance.editor.setTheme(t ?? 'vs-dark')
+  if (monacoInstance.value) monacoInstance.value.editor.setTheme(t ?? 'vs-dark')
 })
 
-onBeforeUnmount(() => editor?.dispose())
+onBeforeUnmount(() => editor.value?.dispose())
+
+defineExpose({ editor, monacoInstance })
 </script>
 
 <template><div ref="container" style="width:100%;height:100%" /></template>
