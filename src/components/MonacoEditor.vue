@@ -2,8 +2,8 @@
 import loader from '@monaco-editor/loader'
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
-const props = defineProps<{ code: string; language: string; theme?: 'vs-dark' | 'vs' }>()
-const emit = defineEmits<{ change: [string] }>()
+const props = defineProps<{ code: string; language: string; theme?: 'vs-dark' | 'vs'; readOnly?: boolean }>()
+const emit = defineEmits<{ change: [string]; ready: [editor: any, monaco: any] }>()
 
 const container = ref<HTMLDivElement | null>(null)
 let editor: any = null
@@ -26,7 +26,11 @@ onMounted(async () => {
     scrollBeyondLastLine: false,
     automaticLayout: true,
     padding: { top: 8 },
+    readOnly: props.readOnly ?? false,
+    glyphMargin: true,
+    lineNumbersMinChars: 3,
   })
+  emit('ready', editor, monacoInstance)
   editor.onDidChangeModelContent(() => emit('change', editor.getValue()))
 })
 
