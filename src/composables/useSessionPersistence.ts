@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { supabase } from '../lib/supabase'
 import type { SessionRow } from '../types/session'
+import type { Comment } from '../types/comment'
 
 type SaveResult = { ok: true } | { ok: false; error: Error }
 type EndResult = { ok: true; session: SessionRow } | { ok: false; error: Error }
@@ -26,6 +27,11 @@ let notesRetryGen = 0
 let bugsDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let bugsLatestValue: string[] = []
 let bugsRetryGen = 0
+
+// --- comments debounce state ---
+let commentsDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let commentsLatestValue: Comment[] = []
+let commentsRetryGen = 0
 
 // Session ID set when createSessionRow or loadSession resolves
 let activeSessionId: string | null = null
@@ -64,6 +70,7 @@ export function useSessionPersistence() {
     // Initialise latest values so flush doesn't overwrite with empty strings
     notesLatestValue = (data as SessionRow).notes
     bugsLatestValue = (data as SessionRow).bugs_checked
+    commentsLatestValue = (data as SessionRow).comments ?? []
     return { data: data as SessionRow }
   }
 
@@ -158,6 +165,45 @@ export function useSessionPersistence() {
     return { ok: true }
   }
 
+  // ── saveComments (debounced 1s) ──────────────────────────────────────────
+  async function doWriteComments(comments: Comment[], gen: number): Promise<void> {
+    const sid = activeSessionId
+    if (!sid) return
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (commentsRetryGen !== gen) return
+      const { error } = await supabase
+        .from('sessions')
+        .update({ comments })
+        .eq('id', sid)
+      if (!error) { saveFailed.value = false; return }
+      if (attempt < 2) await wait(1000)
+    }
+    if (commentsRetryGen === gen) saveFailed.value = true
+  }
+
+  function saveComments(comments: Comment[]): void {
+    commentsLatestValue = comments
+    if (commentsDebounceTimer) clearTimeout(commentsDebounceTimer)
+    commentsDebounceTimer = setTimeout(() => {
+      commentsDebounceTimer = null
+      const gen = ++commentsRetryGen
+      doWriteComments(comments, gen)
+    }, 1000)
+  }
+
+  async function flushComments(): Promise<SaveResult> {
+    if (commentsDebounceTimer) { clearTimeout(commentsDebounceTimer); commentsDebounceTimer = null }
+    const gen = ++commentsRetryGen
+    const sid = activeSessionId
+    if (!sid) return { ok: true }
+    const { error } = await supabase
+      .from('sessions')
+      .update({ comments: commentsLatestValue })
+      .eq('id', sid)
+    if (error && commentsRetryGen === gen) return { ok: false, error: new Error(error.message) }
+    return { ok: true }
+  }
+
   // ── saveChallengeMeta (immediate, retry ×3 at 500ms) ────────────────────
   async function saveChallengeMeta(
     challengeId: string,
@@ -210,6 +256,8 @@ export function useSessionPersistence() {
     flushNotes,
     saveBugsChecked,
     flushBugsChecked,
+    saveComments,
+    flushComments,
     saveChallengeMeta,
     endSession,
     saveFailed,
