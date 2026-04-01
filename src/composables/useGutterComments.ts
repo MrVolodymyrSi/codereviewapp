@@ -49,7 +49,6 @@ function injectStyles(): void {
     .gc-comment {
       border: 1px solid var(--border, #30363d);
       border-radius: 6px;
-      overflow: hidden;
       margin: 4px 8px 4px 0;
       font-family: var(--font-ui, sans-serif);
     }
