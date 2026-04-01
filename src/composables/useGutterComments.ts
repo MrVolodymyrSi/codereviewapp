@@ -36,6 +36,8 @@ function injectStyles(): void {
       box-sizing: border-box;
       width: 100%;
       pointer-events: auto;
+      position: relative;
+      z-index: 1;
     }
     .gc-avatar {
       width: 20px;
@@ -162,6 +164,7 @@ function measureAndCreateZone(
 function buildCommentNode(comment: Comment, onDelete: (id: string) => void): HTMLElement {
   const zone = document.createElement('div')
   zone.className = 'gc-zone gc-comment'
+  zone.addEventListener('mousedown', (e) => e.stopPropagation())
 
   const avatar = document.createElement('div')
   avatar.className = 'gc-avatar'
@@ -205,6 +208,7 @@ function buildFormNode(
 ): HTMLElement {
   const zone = document.createElement('div')
   zone.className = 'gc-zone gc-form'
+  zone.addEventListener('mousedown', (e) => e.stopPropagation())
 
   const avatar = document.createElement('div')
   avatar.className = 'gc-avatar gc-avatar--pending'
