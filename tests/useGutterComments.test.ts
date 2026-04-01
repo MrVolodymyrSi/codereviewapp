@@ -10,6 +10,7 @@ function createMockEditor() {
 
   return {
     getContainerDomNode: () => document.createElement('div'),
+    getLayoutInfo: vi.fn(() => ({ contentWidth: 800 })),
     changeViewZones: vi.fn((cb: (a: any) => void) => {
       cb({
         addZone: vi.fn((zone: any) => {
@@ -31,7 +32,7 @@ function createMockEditor() {
 const mockMonaco = {
   editor: {
     MouseTargetType: {
-      GUTTER_GLYPH_MARGIN: 2,
+      GUTTER_LINE_NUMBERS: 3,
     },
   },
   Range: class {
@@ -44,6 +45,8 @@ const mockMonaco = {
   },
 }
 
+const mockGetLineContent = vi.fn((n: number) => `line ${n} content`)
+
 describe('useGutterComments', () => {
   let editor: ReturnType<typeof createMockEditor>
 
@@ -54,14 +57,15 @@ describe('useGutterComments', () => {
   it('returns init and dispose functions', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const comments = computed<Comment[]>(() => [])
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     expect(typeof gc.init).toBe('function')
     expect(typeof gc.dispose).toBe('function')
   })
@@ -69,14 +73,15 @@ describe('useGutterComments', () => {
   it('init registers mouse event handlers on the editor', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const comments = computed<Comment[]>(() => [])
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
     expect(editor.onMouseMove).toHaveBeenCalledOnce()
     expect(editor.onMouseLeave).toHaveBeenCalledOnce()
@@ -87,20 +92,20 @@ describe('useGutterComments', () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const commentsArr = ref<Comment[]>([])
     const comments = computed(() => commentsArr.value)
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
 
     commentsArr.value = [
-      { id: 'c1', file: 'App.vue', line: 3, text: 'missing error handling', timestamp: 1 },
+      { id: 'c1', file: 'App.vue', lineStart: 3, lineEnd: 3, text: 'missing error handling', timestamp: 1 },
     ]
-    // Allow Vue reactivity to flush
     await Promise.resolve()
 
     expect(editor.changeViewZones).toHaveBeenCalled()
@@ -110,17 +115,18 @@ describe('useGutterComments', () => {
   it('removes a comment zone when a comment is deleted', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const commentsArr = ref<Comment[]>([
-      { id: 'c1', file: 'App.vue', line: 3, text: 'note', timestamp: 1 },
+      { id: 'c1', file: 'App.vue', lineStart: 3, lineEnd: 3, text: 'note', timestamp: 1 },
     ])
     const comments = computed(() => commentsArr.value)
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
     await Promise.resolve()
     expect(editor._zones.size).toBe(1)
@@ -133,98 +139,106 @@ describe('useGutterComments', () => {
   it('adding a second comment adds a second zone without removing the first', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const commentsArr = ref<Comment[]>([
-      { id: 'c1', file: 'App.vue', line: 3, text: 'first', timestamp: 1 },
+      { id: 'c1', file: 'App.vue', lineStart: 3, lineEnd: 3, text: 'first', timestamp: 1 },
     ])
     const comments = computed(() => commentsArr.value)
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
     const changeViewZonesSpy = editor.changeViewZones
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
     await Promise.resolve()
     const callCountAfterFirst = changeViewZonesSpy.mock.calls.length
 
     commentsArr.value = [
-      { id: 'c1', file: 'App.vue', line: 3, text: 'first', timestamp: 1 },
-      { id: 'c2', file: 'App.vue', line: 7, text: 'second', timestamp: 2 },
+      { id: 'c1', file: 'App.vue', lineStart: 3, lineEnd: 3, text: 'first', timestamp: 1 },
+      { id: 'c2', file: 'App.vue', lineStart: 7, lineEnd: 7, text: 'second', timestamp: 2 },
     ]
     await Promise.resolve()
 
     expect(editor._zones.size).toBe(2)
-    // changeViewZones should have been called again for the new comment only
     expect(changeViewZonesSpy.mock.calls.length).toBeGreaterThan(callCountAfterFirst)
   })
 
-  it('sets pendingLine to the clicked line on onGutterClick', async () => {
+  it('calls onRangeSelect with the clicked line on line number mousedown', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const comments = computed<Comment[]>(() => [])
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
-    const onGutterClick = vi.fn((line: number) => { pendingLine.value = line })
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick,
+    const onRangeSelect = vi.fn((start: number, end: number) => {
+      pendingRange.value = { start, end }
+    })
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect,
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
 
-    // Simulate gutter click by calling the onMouseDown handler
+    // Simulate mousedown on line number column then mouseup
     const mouseDownHandler = editor.onMouseDown.mock.calls[0][0]
     mouseDownHandler({
       target: {
-        type: mockMonaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN,
+        type: mockMonaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS,
         position: { lineNumber: 5 },
       },
     })
 
-    expect(onGutterClick).toHaveBeenCalledWith(5)
-    expect(pendingLine.value).toBe(5)
+    // Simulate window mouseup to finalise selection
+    window.dispatchEvent(new MouseEvent('mouseup'))
+
+    expect(onRangeSelect).toHaveBeenCalledWith(5, 5)
+    expect(pendingRange.value).toEqual({ start: 5, end: 5 })
   })
 
-  it('creates a form zone when pendingLine is set', async () => {
+  it('creates a form zone when pendingRange is set', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const comments = computed<Comment[]>(() => [])
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
     await Promise.resolve()
 
-    pendingLine.value = 4
+    pendingRange.value = { start: 4, end: 4 }
     await Promise.resolve()
 
     expect(editor._zones.size).toBe(1)
   })
 
-  it('removes the form zone when pendingLine is cleared', async () => {
+  it('removes the form zone when pendingRange is cleared', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const comments = computed<Comment[]>(() => [])
-    const pendingLine = ref<number | null>(null)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
     const draftText = ref('')
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
 
-    pendingLine.value = 4
+    pendingRange.value = { start: 4, end: 4 }
     await Promise.resolve()
     expect(editor._zones.size).toBe(1)
 
-    pendingLine.value = null
+    pendingRange.value = null
     await Promise.resolve()
     expect(editor._zones.size).toBe(0)
   })
@@ -232,23 +246,23 @@ describe('useGutterComments', () => {
   it('dispose cleans up all zones and event listeners', async () => {
     const { useGutterComments } = await import('../src/composables/useGutterComments')
     const commentsArr = ref<Comment[]>([
-      { id: 'c1', file: 'App.vue', line: 3, text: 'note', timestamp: 1 },
+      { id: 'c1', file: 'App.vue', lineStart: 3, lineEnd: 3, text: 'note', timestamp: 1 },
     ])
     const comments = computed(() => commentsArr.value)
-    const pendingLine = ref<number | null>(4)
+    const pendingRange = ref<{ start: number; end: number } | null>({ start: 4, end: 4 })
     const draftText = ref('')
-    const gc = useGutterComments(comments, pendingLine, draftText, {
-      onGutterClick: vi.fn(),
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
       onDelete: vi.fn(),
       onSubmit: vi.fn(),
       onCancel: vi.fn(),
-    })
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
     gc.init(editor, mockMonaco)
     await Promise.resolve()
     expect(editor._zones.size).toBeGreaterThan(0)
 
     gc.dispose()
-    // After dispose, all zones removed
     expect(editor._zones.size).toBe(0)
   })
 })

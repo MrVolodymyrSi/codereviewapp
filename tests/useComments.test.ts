@@ -57,7 +57,7 @@ describe('useComments module-level functions', () => {
     setOnPersist((comments) => calls.push(comments))
     const key = computed(() => 'test:vue:App.vue')
     const { addComment } = useComments(key)
-    addComment(3, 'note')
+    addComment(3, 3, 'note')
     expect(calls).toHaveLength(1)
     expect(calls[0][0].text).toBe('note')
     setOnPersist(null) // cleanup
@@ -69,7 +69,7 @@ describe('useComments module-level functions', () => {
     const key = computed(() => 'test-update:vue:App.vue')
     const { addComment, updateComment, comments } = useComments(key)
 
-    addComment(5, 'original text')
+    addComment(5, 5, 'original text')
     const added = comments.value[0]
     expect(added.text).toBe('original text')
 
