@@ -36,47 +36,55 @@ const commentKey = computed(
   () => `${activeChallengeId.value}:${activeFramework.value}:${activeFile.value?.name ?? ''}`
 )
 
-const { comments, addComment, removeComment } = useComments(commentKey)
+const { comments, addComment, updateComment, removeComment } = useComments(commentKey)
 
-const pendingLine = ref<number | null>(null)
+const pendingRange = ref<{ start: number; end: number } | null>(null)
 const draftText = ref('')
 
 // Reset form zone when switching files
 watch(() => props.activeFileIndex, () => {
-  pendingLine.value = null
+  pendingRange.value = null
   draftText.value = ''
 })
 
-function onGutterClick(line: number) {
-  if (pendingLine.value === line) {
+const editorInstance = ref<any>(null)
+
+function getLineContent(line: number): string {
+  return editorInstance.value?.getModel()?.getLineContent(line) ?? ''
+}
+
+function onRangeSelect(start: number, end: number) {
+  if (pendingRange.value?.start === start && pendingRange.value?.end === end) {
     cancelComment()
   } else {
-    pendingLine.value = line
+    pendingRange.value = { start, end }
     draftText.value = ''
   }
 }
 
 function submitComment() {
-  if (pendingLine.value !== null && draftText.value.trim()) {
-    addComment(pendingLine.value, draftText.value.trim())
+  if (pendingRange.value !== null && draftText.value.trim()) {
+    addComment(pendingRange.value.start, pendingRange.value.end, draftText.value.trim())
   }
-  pendingLine.value = null
+  pendingRange.value = null
   draftText.value = ''
 }
 
 function cancelComment() {
-  pendingLine.value = null
+  pendingRange.value = null
   draftText.value = ''
 }
 
-const gutterComments = useGutterComments(comments, pendingLine, draftText, {
-  onGutterClick,
+const gutterComments = useGutterComments(comments, pendingRange, draftText, {
+  onRangeSelect,
   onDelete: removeComment,
   onSubmit: submitComment,
   onCancel: cancelComment,
-})
+  onUpdate: updateComment,
+}, getLineContent)
 
 function onEditorReady(editor: any, monaco: any) {
+  editorInstance.value = editor
   gutterComments.init(editor, monaco)
 }
 
