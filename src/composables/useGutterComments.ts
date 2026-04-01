@@ -154,7 +154,7 @@ function measureAndCreateZone(
   // Pass 2: insert with known height
   let zoneId!: string
   editor.changeViewZones((accessor: any) => {
-    zoneId = accessor.addZone({ afterLineNumber, heightInPx: height, domNode })
+    zoneId = accessor.addZone({ afterLineNumber, heightInPx: height, domNode, suppressMouseDown: true })
   })
   return zoneId
 }
