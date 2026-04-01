@@ -35,6 +35,7 @@ function injectStyles(): void {
       border-left: 3px solid #1f6feb;
       box-sizing: border-box;
       width: 100%;
+      pointer-events: auto;
     }
     .gc-avatar {
       width: 20px;
