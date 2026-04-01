@@ -2,21 +2,23 @@ import { ref, computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { Comment } from '../types/comment'
 
-// Module-level store keyed by "challengeId:framework:filename"
 const store = ref<Record<string, Comment[]>>({})
 
-// Module-level persist callback — set by InterviewerView, null otherwise
 let _onPersist: ((comments: Comment[]) => void) | null = null
 
-// ── Module-level named exports ────────────────────────────────────────────
-
 export function hydrateComments(
-  comments: Comment[],
+  comments: any[],
   challengeId: string,
   framework: string,
 ): void {
+  // Normalise legacy comments that have `line` but not `lineStart`/`lineEnd`
+  const normalised: Comment[] = comments.map(c => ({
+    ...c,
+    lineStart: c.lineStart ?? c.line,
+    lineEnd:   c.lineEnd   ?? c.line,
+  }))
   const grouped: Record<string, Comment[]> = {}
-  for (const c of comments) {
+  for (const c of normalised) {
     const key = `${challengeId}:${framework}:${c.file}`
     if (!grouped[key]) grouped[key] = []
     grouped[key].push(c)
@@ -32,18 +34,16 @@ export function setOnPersist(cb: ((comments: Comment[]) => void) | null): void {
   _onPersist = cb
 }
 
-// ── Per-instance composable ───────────────────────────────────────────────
-
 export function useComments(key: ComputedRef<string>) {
   const comments = computed<Comment[]>(() => store.value[key.value] ?? [])
 
-  function addComment(line: number, text: string) {
+  function addComment(lineStart: number, lineEnd: number, text: string) {
     const file = key.value.split(':')[2]
     store.value = {
       ...store.value,
       [key.value]: [
         ...(store.value[key.value] ?? []),
-        { id: crypto.randomUUID(), file, line, text, timestamp: Date.now() },
+        { id: crypto.randomUUID(), file, lineStart, lineEnd, text, timestamp: Date.now() },
       ],
     }
     _onPersist?.(getAllComments())
