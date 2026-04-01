@@ -12,10 +12,10 @@ export function hydrateComments(
   framework: string,
 ): void {
   // Normalise legacy comments that have `line` but not `lineStart`/`lineEnd`
-  const normalised: Comment[] = comments.map(c => ({
-    ...c,
-    lineStart: c.lineStart ?? c.line,
-    lineEnd:   c.lineEnd   ?? c.line,
+  const normalised: Comment[] = comments.map(({ line: _legacy, ...rest }) => ({
+    ...rest,
+    lineStart: rest.lineStart ?? _legacy,
+    lineEnd:   rest.lineEnd   ?? _legacy,
   }))
   const grouped: Record<string, Comment[]> = {}
   for (const c of normalised) {
