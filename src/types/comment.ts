@@ -1,7 +1,8 @@
 export interface Comment {
   id: string
-  file: string       // filename only, e.g. "App.vue"
-  line: number
+  file: string
+  lineStart: number
+  lineEnd: number
   text: string
   timestamp: number
   updatedAt?: number
