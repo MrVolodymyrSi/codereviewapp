@@ -489,7 +489,7 @@ export function useGutterComments(
     const start = Math.min(dragStart, end)
     const finalEnd = Math.max(dragStart, end)
     dragStart = null
-    rangeDecorations = editor.deltaDecorations(rangeDecorations, [])
+    if (editor) rangeDecorations = editor.deltaDecorations(rangeDecorations, [])
     callbacks.onRangeSelect(start, finalEnd)
   }
 
