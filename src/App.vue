@@ -1,17 +1,10 @@
 <script setup lang="ts">
-import { useSession } from './composables/useSession'
-import CreateSessionView from './views/CreateSessionView.vue'
-import InterviewerView from './views/InterviewerView.vue'
-import CandidateView from './views/CandidateView.vue'
-
-const { hasSession, isInterviewer } = useSession()
+import CodeReviewView from './views/CodeReviewView.vue'
 </script>
 
 <template>
   <div class="app">
-    <CreateSessionView v-if="!hasSession" />
-    <InterviewerView v-else-if="isInterviewer" />
-    <CandidateView v-else />
+    <CodeReviewView />
   </div>
 </template>
 
