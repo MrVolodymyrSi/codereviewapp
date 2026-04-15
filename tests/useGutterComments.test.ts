@@ -379,4 +379,36 @@ describe('useGutterComments', () => {
 
     expect(onUpdate).not.toHaveBeenCalled()
   })
+
+  it('Ctrl+Enter on the edit-comment textarea calls onUpdate with trimmed text', async () => {
+    const { useGutterComments } = await import('../src/composables/useGutterComments')
+    const commentsArr = ref<Comment[]>([
+      { id: 'c2', file: 'App.vue', lineStart: 5, lineEnd: 5, text: 'original', timestamp: 1 },
+    ])
+    const comments = computed(() => commentsArr.value)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
+    const draftText = ref('')
+    const onUpdate = vi.fn()
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
+      onDelete: vi.fn(),
+      onSubmit: vi.fn(),
+      onCancel: vi.fn(),
+      onUpdate,
+    }, mockGetLineContent)
+    gc.init(editor, mockMonaco)
+    await Promise.resolve()
+
+    const zone = [...editor._zones.values()][0]
+    const menuBtn = zone.domNode.querySelector('.gc-menu-btn') as HTMLButtonElement
+    menuBtn.click()
+    const editItem = zone.domNode.querySelector('.gc-menu-edit') as HTMLButtonElement
+    editItem.click()
+
+    const editArea = zone.domNode.querySelector('.gc-body textarea') as HTMLTextAreaElement
+    editArea.value = '  ctrl updated  '
+    editArea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }))
+
+    expect(onUpdate).toHaveBeenCalledWith('c2', 'ctrl updated')
+  })
 })
