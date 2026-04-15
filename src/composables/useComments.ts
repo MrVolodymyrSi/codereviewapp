@@ -26,6 +26,7 @@ export function loadComments(challengeId: string, framework: string): void {
 }
 
 function persist(): void {
+  if (!_challengeId) return
   const key = `codereview:comments:${_challengeId}:${_framework}`
   const all = Object.values(store.value).flat()
   localStorage.setItem(key, JSON.stringify(all))
@@ -35,7 +36,7 @@ export function useComments(key: ComputedRef<string>) {
   const comments = computed<Comment[]>(() => store.value[key.value] ?? [])
 
   function addComment(lineStart: number, lineEnd: number, text: string) {
-    const file = key.value.split(':')[2]
+    const file = key.value.split(':').slice(2).join(':')
     store.value = {
       ...store.value,
       [key.value]: [
