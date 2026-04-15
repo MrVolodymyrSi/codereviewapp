@@ -3,35 +3,32 @@ import type { ComputedRef } from 'vue'
 import type { Comment } from '../types/comment'
 
 const store = ref<Record<string, Comment[]>>({})
+let _challengeId = ''
+let _framework = ''
 
-let _onPersist: ((comments: Comment[]) => void) | null = null
-
-export function hydrateComments(
-  comments: any[],
-  challengeId: string,
-  framework: string,
-): void {
-  // Normalise legacy comments that have `line` but not `lineStart`/`lineEnd`
-  const normalised: Comment[] = comments.map(({ line: _legacy, ...rest }) => ({
-    ...rest,
-    lineStart: rest.lineStart ?? _legacy,
-    lineEnd:   rest.lineEnd   ?? _legacy,
-  }))
-  const grouped: Record<string, Comment[]> = {}
-  for (const c of normalised) {
-    const key = `${challengeId}:${framework}:${c.file}`
-    if (!grouped[key]) grouped[key] = []
-    grouped[key].push(c)
+export function loadComments(challengeId: string, framework: string): void {
+  _challengeId = challengeId
+  _framework = framework
+  const key = `codereview:comments:${challengeId}:${framework}`
+  try {
+    const raw = localStorage.getItem(key)
+    const flat: Comment[] = raw ? JSON.parse(raw) : []
+    const grouped: Record<string, Comment[]> = {}
+    for (const c of flat) {
+      const storeKey = `${challengeId}:${framework}:${c.file}`
+      if (!grouped[storeKey]) grouped[storeKey] = []
+      grouped[storeKey].push(c)
+    }
+    store.value = grouped
+  } catch {
+    store.value = {}
   }
-  store.value = grouped
 }
 
-export function getAllComments(): Comment[] {
-  return Object.values(store.value).flat()
-}
-
-export function setOnPersist(cb: ((comments: Comment[]) => void) | null): void {
-  _onPersist = cb
+function persist(): void {
+  const key = `codereview:comments:${_challengeId}:${_framework}`
+  const all = Object.values(store.value).flat()
+  localStorage.setItem(key, JSON.stringify(all))
 }
 
 export function useComments(key: ComputedRef<string>) {
@@ -46,7 +43,7 @@ export function useComments(key: ComputedRef<string>) {
         { id: crypto.randomUUID(), file, lineStart, lineEnd, text, timestamp: Date.now() },
       ],
     }
-    _onPersist?.(getAllComments())
+    persist()
   }
 
   function updateComment(id: string, text: string) {
@@ -57,7 +54,7 @@ export function useComments(key: ComputedRef<string>) {
         c.id === id ? { ...c, text, updatedAt: Date.now() } : c,
       ),
     }
-    _onPersist?.(getAllComments())
+    persist()
   }
 
   function removeComment(id: string) {
@@ -65,7 +62,7 @@ export function useComments(key: ComputedRef<string>) {
       ...store.value,
       [key.value]: (store.value[key.value] ?? []).filter((c) => c.id !== id),
     }
-    _onPersist?.(getAllComments())
+    persist()
   }
 
   return { comments, addComment, updateComment, removeComment }
