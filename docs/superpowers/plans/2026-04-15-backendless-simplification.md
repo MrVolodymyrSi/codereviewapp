@@ -31,7 +31,7 @@
 | Delete | `src/types/session.ts` |
 | Delete | `src/utils/local-session.ts` |
 | Delete | `src/utils/summary-markdown.ts` |
-| Delete | `src/utils/mock-api.ts` |
+| Retain | `src/utils/mock-api.ts` — used by all three `srcdoc-*` utils for iframe fetch injection |
 | Delete | `supabase/` (entire directory) |
 | Delete | `tests/useTimer.test.ts` |
 | Delete | `tests/summary-markdown.test.ts` |
