@@ -265,4 +265,118 @@ describe('useGutterComments', () => {
     gc.dispose()
     expect(editor._zones.size).toBe(0)
   })
+
+  it('Cmd+Enter on the new-comment textarea calls onSubmit', async () => {
+    const { useGutterComments } = await import('../src/composables/useGutterComments')
+    const comments = computed<Comment[]>(() => [])
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
+    const draftText = ref('')
+    const onSubmit = vi.fn()
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
+      onDelete: vi.fn(),
+      onSubmit,
+      onCancel: vi.fn(),
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
+    gc.init(editor, mockMonaco)
+
+    pendingRange.value = { start: 3, end: 3 }
+    await Promise.resolve()
+
+    const zone = [...editor._zones.values()][0]
+    const textarea = zone.domNode.querySelector('textarea') as HTMLTextAreaElement
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true }))
+
+    expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('Ctrl+Enter on the new-comment textarea calls onSubmit', async () => {
+    const { useGutterComments } = await import('../src/composables/useGutterComments')
+    const comments = computed<Comment[]>(() => [])
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
+    const draftText = ref('')
+    const onSubmit = vi.fn()
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
+      onDelete: vi.fn(),
+      onSubmit,
+      onCancel: vi.fn(),
+      onUpdate: vi.fn(),
+    }, mockGetLineContent)
+    gc.init(editor, mockMonaco)
+
+    pendingRange.value = { start: 3, end: 3 }
+    await Promise.resolve()
+
+    const zone = [...editor._zones.values()][0]
+    const textarea = zone.domNode.querySelector('textarea') as HTMLTextAreaElement
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }))
+
+    expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('Cmd+Enter on the edit-comment textarea calls onUpdate with trimmed text', async () => {
+    const { useGutterComments } = await import('../src/composables/useGutterComments')
+    const commentsArr = ref<Comment[]>([
+      { id: 'c1', file: 'App.vue', lineStart: 3, lineEnd: 3, text: 'original', timestamp: 1 },
+    ])
+    const comments = computed(() => commentsArr.value)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
+    const draftText = ref('')
+    const onUpdate = vi.fn()
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
+      onDelete: vi.fn(),
+      onSubmit: vi.fn(),
+      onCancel: vi.fn(),
+      onUpdate,
+    }, mockGetLineContent)
+    gc.init(editor, mockMonaco)
+    await Promise.resolve()
+
+    const zone = [...editor._zones.values()][0]
+    const menuBtn = zone.domNode.querySelector('.gc-menu-btn') as HTMLButtonElement
+    menuBtn.click()
+    const editItem = zone.domNode.querySelector('.gc-menu-edit') as HTMLButtonElement
+    editItem.click()
+
+    const editArea = zone.domNode.querySelector('.gc-body textarea') as HTMLTextAreaElement
+    editArea.value = '  updated text  '
+    editArea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true }))
+
+    expect(onUpdate).toHaveBeenCalledWith('c1', 'updated text')
+  })
+
+  it('Cmd+Enter on the edit-comment textarea with empty text does not call onUpdate', async () => {
+    const { useGutterComments } = await import('../src/composables/useGutterComments')
+    const commentsArr = ref<Comment[]>([
+      { id: 'c1', file: 'App.vue', lineStart: 3, lineEnd: 3, text: 'original', timestamp: 1 },
+    ])
+    const comments = computed(() => commentsArr.value)
+    const pendingRange = ref<{ start: number; end: number } | null>(null)
+    const draftText = ref('')
+    const onUpdate = vi.fn()
+    const gc = useGutterComments(comments, pendingRange, draftText, {
+      onRangeSelect: vi.fn(),
+      onDelete: vi.fn(),
+      onSubmit: vi.fn(),
+      onCancel: vi.fn(),
+      onUpdate,
+    }, mockGetLineContent)
+    gc.init(editor, mockMonaco)
+    await Promise.resolve()
+
+    const zone = [...editor._zones.values()][0]
+    const menuBtn = zone.domNode.querySelector('.gc-menu-btn') as HTMLButtonElement
+    menuBtn.click()
+    const editItem = zone.domNode.querySelector('.gc-menu-edit') as HTMLButtonElement
+    editItem.click()
+
+    const editArea = zone.domNode.querySelector('.gc-body textarea') as HTMLTextAreaElement
+    editArea.value = '   '
+    editArea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true }))
+
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
 })

@@ -382,6 +382,19 @@ function buildCommentNode(
     body.appendChild(actions)
     requestAnimationFrame(() => editArea.focus())
 
+    editArea.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault()
+        const newText = editArea.value.trim()
+        if (newText) {
+          textNode.textContent = newText
+          onUpdate(comment.id, newText)
+        }
+        body.innerHTML = ''
+        body.appendChild(textNode)
+      }
+    })
+
     cancelBtn.addEventListener('click', () => {
       body.innerHTML = ''
       body.appendChild(textNode)
@@ -426,7 +439,7 @@ function buildFormNode(
   textarea.placeholder = 'Leave a comment…'
   textarea.addEventListener('input', () => { draftText.value = textarea.value })
   textarea.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); onSubmit() }
+    if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'Enter')) { e.preventDefault(); onSubmit() }
   })
 
   const actions = document.createElement('div')
